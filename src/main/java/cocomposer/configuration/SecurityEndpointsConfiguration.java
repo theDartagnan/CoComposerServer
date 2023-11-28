@@ -19,15 +19,17 @@
 package cocomposer.configuration;
 
 import cocomposer.security.authentification.RestAuthenticationFilter;
+import cocomposer.security.csrf.CsrfCookieFilter;
+import cocomposer.security.csrf.SpaCsrfTokenRequestHandler;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -46,6 +48,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -63,7 +66,7 @@ public class SecurityEndpointsConfiguration {
 
     @Value("${server.servlet.session.cookie.name:JSESSIONID}")
     private String sessionCookieName;
-    
+
     @Bean
     public DaoAuthenticationProvider mongoLocalAuthenticatitionProvider(UserDetailsService userDetailsService, PasswordEncoder encoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -96,7 +99,7 @@ public class SecurityEndpointsConfiguration {
     }
 
     @Bean
-    @Profile("cors")
+    @ConditionalOnProperty(name = "app.security.cors", havingValue = "true")
     CorsConfiguration corsConfiguration() {
         final CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*", "http://127.0.0.1:*", "moz-extension://*"));
@@ -107,7 +110,7 @@ public class SecurityEndpointsConfiguration {
     }
 
     @Bean
-    @Profile("cors")
+    @ConditionalOnProperty(name = "app.security.cors", havingValue = "true")
     CorsConfigurationSource corsConfigurationSource(CorsConfiguration corsConfiguration) {
         LOG.warn("CONFIGURE HTTP SECURITY WITH CORS");
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -119,35 +122,60 @@ public class SecurityEndpointsConfiguration {
     @Bean
     public SecurityFilterChain MultiSecFilterChain(HttpSecurity http,
             RestAuthenticationFilter restAuthenticationFilter,
-            Optional<CorsConfigurationSource> corsConfigurationSource) throws Exception {
-        return http
-                .exceptionHandling(eh -> eh.accessDeniedHandler(new AccessDeniedHandlerImpl())) // return a simple 403 error if unauthorized
-                .cors(cors -> {
-                    if (corsConfigurationSource.isPresent()) {
-                        cors.configurationSource(corsConfigurationSource.get());
-                    }
-                }) // Enable cors for localhost
-                .addFilterAt(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add the rest authentication filter
+            Optional<CorsConfigurationSource> corsConfigurationSource,
+            AppSecurityConfigurationProperties appSecProperties) throws Exception {
+        // Gestion de l'accès non autorisé : renvoie simplement une 403, du point d'autentification,
+        // de la déconnection
+        http
+                .exceptionHandling(eh -> eh.accessDeniedHandler(new AccessDeniedHandlerImpl()))
+                .addFilterAt(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logoutCustomizer -> logoutCustomizer.logoutUrl("/api/logout")
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
                 .deleteCookies(this.sessionCookieName)
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
-                ) // Set logout uri and enforce session cookie deletion
-                .sessionManagement(sm -> {
-                    sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).maximumSessions(1);
-                    sm.sessionFixation(sf -> sf.newSession());
-                }) // Set 1 session max per user and enforce new session creation on authentication to avoir session fixation
-                .headers(h -> h.frameOptions(fo -> fo.sameOrigin())) // Enforce same origin for framing (use with sockjs & old version of IE)
-                .csrf(csrf -> csrf.disable())
-                //.csrf(csrf -> ??) // Configure CSRF
-                // Next is firewall HTTP request rules
-                .authorizeHttpRequests(ahr -> ahr
-                .requestMatchers(HttpMethod.OPTIONS).permitAll() // allow all options request (for cors)
-                .requestMatchers(HttpMethod.POST, "/api/v1/rest/accounts").permitAll() // Allow public account creation
-                .requestMatchers("/api/v1/rest/**").authenticated() // Minimum requirements for api 'rest or websocket) access: being authenticated
-                //.requestMatchers(HttpMethod.GET).permitAll() // allow error access page and all static resources
-                .anyRequest().denyAll()) // Any other request refused
-                .build();
+                );
+        // Gestion des session : création uniquement si demandé, au max 1 par utilisateur, et force la création
+        // de nouvelle session
+        http.sessionManagement(sm -> {
+            sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).maximumSessions(1);
+            sm.sessionFixation(sf -> sf.newSession());
+        });
+        // Gestion du CORS au besoin
+        http.cors(cors -> {
+            if (corsConfigurationSource.isPresent()) {
+                LOG.info("ENHANCE CORS FOR HTTP");
+                cors.configurationSource(corsConfigurationSource.get());
+            }
+        });
+        // Protection CSRF pour une SPA (Double cookie, chiffré) si activé
+        if (appSecProperties.isCsrf()) {
+            CookieCsrfTokenRepository csrfTokenRepo = new CookieCsrfTokenRepository();
+            csrfTokenRepo.setCookieCustomizer((cookieBuilder) -> {
+                cookieBuilder
+                        .path("/")
+                        .httpOnly(false)
+                        .sameSite("lax").build();
+            });
+            http.csrf(csrf -> csrf
+                    .csrfTokenRepository(csrfTokenRepo) // Token stocké dans un cookie
+                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())) // Résolution mixte : en clair quand token transmis via en-tête ou param de requête, chiffré sinon
+                    .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class); // pour la mise à jour du cookie au besoin
+        }
+
+        // Par-feu applicatif
+        http.authorizeHttpRequests(ahr -> {
+            if (appSecProperties.isCors()) {
+                // Autorise les requête OPTIONS à tous si cors
+                ahr.requestMatchers(HttpMethod.OPTIONS).permitAll();
+            }
+            ahr
+                    .requestMatchers(HttpMethod.GET, "/api/v1/rest/accounts/myself").permitAll() // Allow public access to self account for session checking
+                    .requestMatchers(HttpMethod.POST, "/api/v1/rest/accounts").anonymous()// Crétion de compte publique autorisé
+                    .requestMatchers("/api/**").authenticated() // toute l'api authentifié
+                    .anyRequest().denyAll(); // Tout autre requete interdit
+        });
+
+        return http.build();
     }
 }
