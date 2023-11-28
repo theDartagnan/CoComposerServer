@@ -24,6 +24,7 @@ import cocomposer.security.authentification.CoComposerMemberDetails;
 import cocomposer.services.AccountService;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -53,11 +54,12 @@ public class AccountRestController {
 
     @GetMapping("myself")
     @JsonView(MemberViews.Normal.class)
-    public Member getMyself(@AuthenticationPrincipal CoComposerMemberDetails currentUser) {
+    public ResponseEntity<Member> getMyself(@AuthenticationPrincipal CoComposerMemberDetails currentUser) {
         if (currentUser == null) {
-            throw new AccessDeniedException("Authentication required");
+            return ResponseEntity.noContent().build();
         }
-        return this.accountSvc.getAccount(currentUser.getUsername());
+        Member member = this.accountSvc.getAccount(currentUser.getUsername());
+        return ResponseEntity.ok(member);
     }
 
     @PostMapping
