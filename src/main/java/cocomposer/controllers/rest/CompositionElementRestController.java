@@ -60,7 +60,7 @@ public class CompositionElementRestController {
         return this.compoElemSvc.addElementPersonnal(compoId, elementInfo);
     }
 
-    @PutMapping("{elemId:[\\-\\w\\#]{4, 50}}")
+    @PutMapping("{elemId:[\\-\\w\\#]{4,50}}")
     @JsonView(CompositionViews.Details.class)
     public CompositionElement updateElement(@PathVariable String compoId, @PathVariable String elemId, @RequestBody CompositionElement elementInfo) {
         if (elementInfo == null) {
@@ -78,7 +78,7 @@ public class CompositionElementRestController {
         return this.compoElemSvc.updateElementPersonnal(compoId, correctedElementInfo);
     }
 
-    @PutMapping("{elemId:[\\-\\w\\#]{4, 50}}/position")
+    @PutMapping("{elemId:[\\-\\w\\#]{4,50}}/position")
     public ElementPositon updateElementPosition(@PathVariable String compoId, @PathVariable String elemId, @RequestBody ElementPositon position) {
         if (position == null) {
             throw new IllegalArgumentException("Missing position data");
@@ -87,7 +87,7 @@ public class CompositionElementRestController {
         return position;
     }
 
-    @DeleteMapping("{elemId:[\\-\\w\\#]{4, 50}}")
+    @DeleteMapping("{elemId:[\\-\\w\\#]{4,50}}")
     public ResponseEntity deleteElement(@PathVariable String compoId, @PathVariable String elemId) {
         this.compoElemSvc.deleteElementPersonnal(compoId, elemId);
         return ResponseEntity.noContent().build();
