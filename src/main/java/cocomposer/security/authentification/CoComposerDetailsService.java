@@ -20,7 +20,6 @@ package cocomposer.security.authentification;
 
 import cocomposer.model.Member;
 import cocomposer.model.MemberCredential;
-import java.util.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -48,11 +47,9 @@ public class CoComposerDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         // Fetch member in db
         final Member member = this.findMemberByEmail(email);
-        LOG.info("Fetch member for email " + email + " : " + Objects.toString(member));
         if (member != null) {
             // if member found fetch memberCred
             final MemberCredential cred = this.findMemberCredential(member);
-            LOG.info("Fetch cred for email " + email + " : " + Objects.toString(cred));
             if (cred != null) {
                 // if member cred found, create user details.
                 return new CoComposerMemberDetails(member, cred);

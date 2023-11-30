@@ -21,6 +21,7 @@ package cocomposer.configuration;
 import cocomposer.security.authentification.RestAuthenticationFilter;
 import cocomposer.security.csrf.CsrfCookieFilter;
 import cocomposer.security.csrf.SpaCsrfTokenRequestHandler;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,15 +33,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.Message;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
@@ -59,7 +64,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  */
 @Configuration
 @EnableWebSecurity
-//@EnableWebSocketSecurity
+@EnableWebSocketSecurity
 public class SecurityEndpointsConfiguration {
 
     private static final Log LOG = LogFactory.getLog(SecurityEndpointsConfiguration.class);
@@ -106,6 +111,7 @@ public class SecurityEndpointsConfiguration {
         configuration.setAllowedMethods(Arrays.asList("OPTIONS", "HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"));
         configuration.setAllowedHeaders(Arrays.asList("content-type", "Accept", "Accept-Language", "Authorization", "X-Requested-With", "x-xsrf-token"));
         configuration.setAllowCredentials(Boolean.TRUE);
+        configuration.setMaxAge(Duration.ofHours(6));
         return configuration;
     }
 
@@ -148,6 +154,10 @@ public class SecurityEndpointsConfiguration {
                 cors.configurationSource(corsConfigurationSource.get());
             }
         });
+
+        // Protection pour SockJS en cas d'injection de Frame dans la page sur vieux navigateurs
+        http.headers(h -> h.frameOptions(fo -> fo.sameOrigin()));
+
         // Protection CSRF pour une SPA (Double cookie, chiffré) si activé
         if (appSecProperties.isCsrf()) {
             CookieCsrfTokenRepository csrfTokenRepo = new CookieCsrfTokenRepository();
@@ -158,6 +168,7 @@ public class SecurityEndpointsConfiguration {
                         .sameSite("lax").build();
             });
             http.csrf(csrf -> csrf
+                    .ignoringRequestMatchers("/api/websocket/**") // request initialisation SockJS non prise en compte
                     .csrfTokenRepository(csrfTokenRepo) // Token stocké dans un cookie
                     .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())) // Résolution mixte : en clair quand token transmis via en-tête ou param de requête, chiffré sinon
                     .addFilterAfter(new CsrfCookieFilter(), UsernamePasswordAuthenticationFilter.class); // pour la mise à jour du cookie au besoin
@@ -177,5 +188,14 @@ public class SecurityEndpointsConfiguration {
         });
 
         return http.build();
+    }
+
+    @Bean
+    public AuthorizationManager<Message<?>> messageAuthorizationManager(MessageMatcherDelegatingAuthorizationManager.Builder messages) {
+        messages.nullDestMatcher().authenticated()
+                .simpDestMatchers("/app/compositions.*").authenticated()
+                .simpSubscribeDestMatchers("/user/queue/errors", "/user/queue/compositions", "/topic/compositions.*").authenticated()
+                .anyMessage().denyAll();
+        return messages.build();
     }
 }

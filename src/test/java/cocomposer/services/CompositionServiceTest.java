@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @author Remi Venant
  */
-@ActiveProfiles("mongo-test")
+@ActiveProfiles({"mongo-test", "no-ext-broker"})
 @Import(TestDatasetConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class CompositionServiceTest {
@@ -162,17 +162,28 @@ public class CompositionServiceTest {
     public void testUpdateCompositionTitleOkForAdmin() {
         String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
         String newTitle = "NEW TITLE";
-        String updatedTitle = this.testedService.updateCompositionTitle(compoId, newTitle);
+        String updatedTitle = this.testedService.updateCompositionTitlePersonnal(compoId, newTitle);
         assertThat(updatedTitle).isEqualTo(newTitle);
     }
 
     @Test
     @WithUserDetails(value = "mem1@collamap.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
-    public void testUpdateCompositionTitleOkForOwner() {
+    public void testUpdateCollaborativeCollaborativeCompositionTitleOkForOwner() {
         String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
         String newTitle = "NEW TITLE";
-        String updatedTitle = this.testedService.updateCompositionTitle(compoId, newTitle);
+        String updatedTitle = this.testedService.updateCompositionTitleCollaborative(compoId, newTitle);
         assertThat(updatedTitle).isEqualTo(newTitle);
+    }
+
+    @Test
+    @WithUserDetails(value = "mem1@collamap.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    public void testUpdatePersonnalCollaborativeCompositionTitleOkForOwner() {
+        String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
+        String newTitle = "NEW TITLE";
+        assertThatThrownBy(()
+                -> this.testedService.updateCompositionTitlePersonnal(compoId, newTitle))
+                .as("No admin and not owner rejected")
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -181,7 +192,7 @@ public class CompositionServiceTest {
         String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
         String newTitle = "NEW TITLE";
         assertThatThrownBy(()
-                -> this.testedService.updateCompositionTitle(compoId, newTitle))
+                -> this.testedService.updateCompositionTitlePersonnal(compoId, newTitle))
                 .as("No admin and not owner rejected")
                 .isInstanceOf(AccessDeniedException.class);
     }

@@ -18,6 +18,36 @@ services:
       timeout: 10s
       retries: 10
       start_period: 20s
+  
+  websocket-broker:
+    image: rabbitmq:3.12
+    hostname: websocket-broker
+    environment:
+      - RABBITMQ_DEFAULT_USER=brokerusr
+      - RABBITMQ_DEFAULT_PASS=brokerpass
+    configs:
+      - source: broker_stomp_conf
+        target: /etc/rabbitmq/conf.d/30-stomp.conf
+        mode: 0440
+      - source: broker_plugins
+        target: /etc/rabbitmq/enabled_plugins
+        mode: 0440
+    ports:
+      # - 127.0.0.1:5672:5672
+      - 127.0.0.1:61613:61613 # pour spring
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "-t", "5", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
 
 volumes:
   data:
+
+configs:
+  broker_plugins:
+    file: config/broker_plugins.conf
+  broker_stomp_conf:
+    file: config/broker_stomp.conf
