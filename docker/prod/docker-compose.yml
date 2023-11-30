@@ -1,0 +1,86 @@
+version: '3.8'
+
+name: 'cocomposer-prod'
+
+services:
+  compo-db:
+    image: mongo:6.0
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cocomposerusr
+      MONGO_INITDB_ROOT_PASSWORD: ah3dhjak345aj
+      MONGO_INITDB_DATABASE: cocomposer-db
+    volumes:
+      - data:/data/db
+    networks:
+      - cocomposer-net
+    ports:
+      - 127.0.0.1:27017:27017/tcp
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+  
+  ws-broker:
+    image: rabbitmq:3.12
+    hostname: ws-broker
+    environment:
+      - RABBITMQ_DEFAULT_USER=cocomposerusr
+      - RABBITMQ_DEFAULT_PASS=ah3dhjak345aj
+    configs:
+      - source: broker_stomp_conf
+        target: /etc/rabbitmq/conf.d/30-stomp.conf
+        mode: 0440
+      - source: broker_plugins
+        target: /etc/rabbitmq/enabled_plugins
+        mode: 0440
+    networks:
+      - cocomposer-net
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "-t", "5", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  chat-server:
+    image: maven:3.9.5-amazoncorretto-21
+    depends_on:
+      compo-db:
+        condition: service_healthy
+      ws-broker:
+        condition: service_healthy
+    restart: always
+    working_dir: /usr/src/app
+    configs:
+      - source: spring
+        target: /usr/src/application.properties
+        mode: 0440
+    volumes:
+      - api-maven-cache:/root/.m2
+      - ../../:/usr/src/app
+      - api-build-cache:/usr/src/app/target
+    networks:
+      - cocomposer-net
+    ports:
+      - 127.0.0.1:8080:8080
+    command: mvn spring-boot:run -Dspring-boot.run.arguments=--spring.config.location=/usr/src/application.properties
+
+volumes:
+  data:
+  api-maven-cache:
+  api-build-cache:
+
+networks:
+  cocomposer-net:
+
+configs:
+  broker_plugins:
+    file: config/broker_plugins.conf
+  broker_stomp_conf:
+    file: config/broker_stomp.conf
+  spring:
+    file: config/application.properties
