@@ -33,19 +33,21 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  *
  * @author Remi Venant
  */
-@ControllerAdvice
+@ControllerAdvice(annotations = {RestController.class})
 public class ExceptionController {
+
     private static final Log LOG = LogFactory.getLog(ExceptionController.class);
-    
+
     private void logError(Throwable ex) {
         LOG.warn(ex.getClass().getName() + ": " + ex.getMessage());
     }
-    
+
     @ExceptionHandler(AccessDeniedException.class)
     public @ResponseBody
     ResponseEntity<ErrorMessage> handleAccessDenied(HttpServletRequest request, AccessDeniedException ex) {

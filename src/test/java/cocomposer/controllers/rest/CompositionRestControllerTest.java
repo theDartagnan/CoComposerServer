@@ -50,7 +50,7 @@ import org.springframework.web.context.WebApplicationContext;
  *
  * @author Remi Venant
  */
-@ActiveProfiles({"mongo-test", "secu-logs"})
+@ActiveProfiles({"mongo-test", "secu-logs", "no-ext-broker"})
 @Import(TestDatasetConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class CompositionRestControllerTest {

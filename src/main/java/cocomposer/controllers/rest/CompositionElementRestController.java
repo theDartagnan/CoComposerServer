@@ -25,8 +25,10 @@ import com.fasterxml.jackson.annotation.JsonView;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,25 +41,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/rest/compositions/{compoId:[abcdef0-9]{24}}/elements")
 public class CompositionElementRestController {
+
     private static final Log LOG = LogFactory.getLog(CompositionElementRestController.class);
-    
+
     private final CompositionElementService compoElemSvc;
-    
+
     @Autowired
     public CompositionElementRestController(CompositionElementService compoElemSvc) {
         this.compoElemSvc = compoElemSvc;
     }
-    
-    @PutMapping
+
+    @PostMapping
     @JsonView(CompositionViews.Details.class)
     public CompositionElement createElement(@PathVariable String compoId, @RequestBody CompositionElement elementInfo) {
         if (elementInfo == null) {
             throw new IllegalArgumentException("Missing creation data");
         }
-        LOG.info("Element info extra prop: " + elementInfo.getExtraProperties().toString());
-        return this.compoElemSvc.addElement(compoId, elementInfo);
+        return this.compoElemSvc.addElementPersonnal(compoId, elementInfo);
     }
-    
+
     @PutMapping("{elemId:[\\-\\w]+}")
     @JsonView(CompositionViews.Details.class)
     public CompositionElement updateElement(@PathVariable String compoId, @PathVariable String elemId, @RequestBody CompositionElement elementInfo) {
@@ -73,24 +75,25 @@ public class CompositionElementRestController {
         } else if (!elemId.equals(elementInfo.getId())) {
             throw new IllegalArgumentException("Unconsistent update data with element id");
         }
-        return this.compoElemSvc.updateElement(compoId, correctedElementInfo);
+        return this.compoElemSvc.updateElementPersonnal(compoId, correctedElementInfo);
     }
-    
+
     @PutMapping("{elemId:[\\-\\w]+}/position")
     public ElementPositon updateElementPosition(@PathVariable String compoId, @PathVariable String elemId, @RequestBody ElementPositon position) {
         if (position == null) {
             throw new IllegalArgumentException("Missing position data");
         }
-        this.compoElemSvc.updateElementPosition(compoId, elemId, position.x, position.y);
+        this.compoElemSvc.updateElementPositionPersonnal(compoId, elemId, position.x, position.y);
         return position;
     }
-    
+
     @DeleteMapping("{elemId:[\\-\\w]+}")
-    public void deleteElement(@PathVariable String compoId, @PathVariable String elemId) {
-        this.compoElemSvc.deleteElement(compoId, elemId);
+    public ResponseEntity deleteElement(@PathVariable String compoId, @PathVariable String elemId) {
+        this.compoElemSvc.deleteElementPersonnal(compoId, elemId);
+        return ResponseEntity.noContent().build();
     }
-    
+
     public static record ElementPositon(double x, double y) {
-        
+
     }
 }

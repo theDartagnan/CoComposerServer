@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -45,8 +46,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/rest/compositions")
 public class CompositionRestController {
+
     private static final Log LOG = LogFactory.getLog(CompositionRestController.class);
-    
+
     private final CompositionService compositionSvc;
 
     @Autowired
@@ -56,7 +58,6 @@ public class CompositionRestController {
 
     @GetMapping
     public MemberCompositionSummariesCollection getMyCompositions(@AuthenticationPrincipal CoComposerMemberDetails currentUser) {
-        LOG.info("Access getMyCompositions");
         if (currentUser == null) {
             throw new AccessDeniedException("Authentication required");
         }
@@ -64,7 +65,7 @@ public class CompositionRestController {
     }
 
     @PostMapping
-    @JsonView(CompositionViews.Normal.class)
+    @JsonView(CompositionViews.Details.class)
     public Composition createComposition(@RequestBody Composition compositionInfo,
             @AuthenticationPrincipal CoComposerMemberDetails currentUser) {
         if (compositionInfo == null) {
@@ -73,7 +74,8 @@ public class CompositionRestController {
         if (currentUser == null) {
             throw new AccessDeniedException("Authentication required");
         }
-        return this.compositionSvc.createComposition(currentUser.getUsername(), compositionInfo);
+        Composition compo = this.compositionSvc.createComposition(currentUser.getUsername(), compositionInfo);
+        return compo;
     }
 
     @GetMapping("{compoId:[abcdef0-9]{24}}")
@@ -82,7 +84,8 @@ public class CompositionRestController {
         if (currentUser == null) {
             throw new AccessDeniedException("Authentication required");
         }
-        return this.compositionSvc.getComposition(compoId, currentUser.getUsername());
+        Composition compo = this.compositionSvc.getComposition(compoId, currentUser.getUsername());
+        return compo;
     }
 
     // Update title or collaborative indicator
@@ -92,19 +95,20 @@ public class CompositionRestController {
             throw new IllegalArgumentException("Cannot patch title and collaborative at the same time");
         }
         if (compositionInfo.title != null) {
-            final String updatedTitle = this.compositionSvc.updateCompositionTitle(compoId, compositionInfo.title);
+            final String updatedTitle = this.compositionSvc.updateCompositionTitlePersonnal(compoId, compositionInfo.title);
             return new CompositionPatching(updatedTitle, null);
         }
         if (compositionInfo.collaborative != null) {
-            final boolean updatedCollaborative = this.compositionSvc.updateCompositionCollaborative(compoId, compositionInfo.collaborative);
+            final boolean updatedCollaborative = this.compositionSvc.updateCompositionCollaborativePersonnal(compoId, compositionInfo.collaborative);
             return new CompositionPatching(null, updatedCollaborative);
         }
         throw new IllegalArgumentException("Missing composition information to update.");
     }
 
     @DeleteMapping("{compoId:[abcdef0-9]{24}}")
-    public void deleteComposition(@PathVariable String compoId) {
+    public ResponseEntity deleteComposition(@PathVariable String compoId) {
         this.compositionSvc.deleteComposition(compoId);
+        return ResponseEntity.noContent().build();
     }
 
     public static record CompositionPatching(String title, Boolean collaborative) {

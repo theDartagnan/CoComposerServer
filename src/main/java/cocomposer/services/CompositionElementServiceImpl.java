@@ -22,6 +22,7 @@ import cocomposer.model.CompositionElement;
 import cocomposer.model.CompositionRepository;
 import jakarta.validation.ConstraintViolationException;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,14 +49,13 @@ public class CompositionElementServiceImpl implements CompositionElementService 
     }
 
     @Override
-    public CompositionElement addElement(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, DuplicateKeyException, NoSuchElementException {
-        // TODO : add a test where elementInfo.id is null or blank
-
-        // If both the composition and the elementInfo id exist, throw an exception
-        if (this.compoRepo.existsByIdAndElementsId(compoId, elementInfo.getId())) {
-            throw new DuplicateKeyException("Element already present.");
-        }
-
+    public CompositionElement addElementPersonnal(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, DuplicateKeyException, NoSuchElementException {
+        // Find a proper candidate for an id
+        String elementKey;
+        do {
+            elementKey = UUID.randomUUID().toString();
+        } while (this.compoRepo.existsByIdAndElementsId(compoId, elementKey));
+        elementInfo.setId(elementKey);
         // Add the element. If the update cannot be made, composition does not exist
         long res = this.compoRepo.findAndPushElementById(compoId, elementInfo);
         if (res < 1) {
@@ -65,7 +65,14 @@ public class CompositionElementServiceImpl implements CompositionElementService 
     }
 
     @Override
-    public CompositionElement updateElement(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+    public CompositionElement addElementCollaborative(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, DuplicateKeyException, NoSuchElementException {
+        CompositionElement elem = this.addElementPersonnal(compoId, elementInfo);
+        // TODO: Send information on websocket
+        return elem;
+    }
+
+    @Override
+    public CompositionElement updateElementPersonnal(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         // TODO : add a test where elementInfo.id is null or blank
 
         // Update the element. If the update cannot be made, composition or element does not exist
@@ -78,11 +85,19 @@ public class CompositionElementServiceImpl implements CompositionElementService 
                 throw new NoSuchElementException("Composition or element in composition not found");
             }
         }
+
         return elementInfo;
     }
 
     @Override
-    public void updateElementPosition(String compoId, String elementId, double x, double y) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+    public CompositionElement updateElementCollaborative(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+        CompositionElement updatedElement = this.updateElementPersonnal(compoId, elementInfo);
+        // TODO: Send information on websocket
+        return updatedElement;
+    }
+
+    @Override
+    public void updateElementPositionPersonnal(String compoId, String elementId, double x, double y) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         // Set the element position. If the update cannot be made, composition or element does not exist
         long res = this.compoRepo.findAndSetElementPositionByIdAndElementsId(compoId, elementId, x, y);
         if (res < 1) {
@@ -94,12 +109,24 @@ public class CompositionElementServiceImpl implements CompositionElementService 
     }
 
     @Override
-    public void deleteElement(String compoId, String elementId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+    public void updateElementPositionCollaborative(String compoId, String elementId, double x, double y) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+        this.updateElementPositionPersonnal(compoId, elementId, x, y);
+        // TODO: Send information on websocket
+    }
+
+    @Override
+    public void deleteElementPersonnal(String compoId, String elementId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         // Delete the element. If the update cannot be made, composition or element does not exist
         long res = this.compoRepo.findAndPullElementById(compoId, elementId);
         if (res < 1) {
             throw new NoSuchElementException("Composition or element in composition not found");
         }
+    }
+
+    @Override
+    public void deleteElementCollaborative(String compoId, String elementId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+        this.deleteElementPersonnal(compoId, elementId);
+        // TODO: Send information on websocket
     }
 
 }

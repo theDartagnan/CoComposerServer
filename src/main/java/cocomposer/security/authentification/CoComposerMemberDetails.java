@@ -57,4 +57,9 @@ public class CoComposerMemberDetails extends User implements Serializable {
         return email;
     }
 
+    @Override
+    public String toString() {
+        return "CoComposerMemberDetails{" + "email=" + email + ", username=" + this.getUsername() + '}';
+    }
+
 }

@@ -27,11 +27,11 @@ public interface CompositionViews {
     public static interface Normal extends DefaultView.Default {
 
     }
-    
-    public static interface Details extends Normal {
+
+    public static interface Details extends Normal, MemberViews.Normal {
 
     }
-    
+
     public static interface Administrative extends Details {
 
     }

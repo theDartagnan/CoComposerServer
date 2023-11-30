@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @author Remi Venant
  */
-@ActiveProfiles("mongo-test")
+@ActiveProfiles({"mongo-test", "no-ext-broker"})
 @Import(TestDatasetConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class AccountServiceTest {

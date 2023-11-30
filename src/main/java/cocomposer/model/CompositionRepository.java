@@ -31,26 +31,31 @@ import org.springframework.data.mongodb.repository.Update;
 public interface CompositionRepository extends MongoRepository<Composition, String> {
 
     boolean existsByIdAndOwnerId(String compoId, String ownerId);
-    
+
     @Query(value = "{id: ?0, $or: [{owner: ?#{new org.bson.types.ObjectId([1])} }, {guests: ?#{new org.bson.types.ObjectId([1])} } ]}", exists = true)
     boolean existsByIdAndOwnerOrGuestsId(String compoId, String userId);
-    
-    @Query(value = "{id: ?0, $or: [{owner: ?#{new org.bson.types.ObjectId([1])} }, {collaborative: true, guests: ?#{new org.bson.types.ObjectId([1])} } ]}", exists = true)
-    boolean canUserEditCompo(String compoId, String guestId);
-    
+
+    @Query(value = "{id: ?0, owner: ?#{new org.bson.types.ObjectId([1])}, collaborative: false}", exists = true)
+    boolean canUserEditPersonnalCompo(String compoId, String userId);
+
+    @Query(value = "{id: ?0, collaborative: true,  $or: [{owner: ?#{new org.bson.types.ObjectId([1])} }, {guests: ?#{new org.bson.types.ObjectId([1])} } ]}", exists = true)
+    boolean canUserEditCollabCompo(String compoId, String guestId);
+
     boolean existsByIdAndElementsId(String compoId, String elementId);
 
     Stream<CompositionSummary> findSummaryByOwner(Member owner);
 
     Stream<CompositionSummary> findSummaryByGuests(Member guest);
-    
+
+    Stream<Composition> findCompositionsByOwner(Member owner);
+
     Stream<IdOnly> findCompositionIdsByOwner(Member owner);
 
     long deleteByIdIn(Collection<String> compoIds);
-    
+
     @Update("{ '$set' : { 'title' : ?1 } }")
     long findAndSetTitleById(String compoId, String title);
-    
+
     @Update("{ '$set' : { 'collaborative' : ?1 } }")
     long findAndSetCollaborativeById(String compoId, boolean collaborative);
 
@@ -64,7 +69,7 @@ public interface CompositionRepository extends MongoRepository<Composition, Stri
      */
     @Update("{ '$addToSet' : { 'guests' : ?#{new org.bson.types.ObjectId([1].id)} } }")
     long findAndPushGuestById(String compoId, Member editor);
-    
+
     /**
      * Add an element to the composition. Does not assert unicity of element id!
      *
@@ -75,15 +80,15 @@ public interface CompositionRepository extends MongoRepository<Composition, Stri
      */
     @Update("{ '$push' : { 'elements' : ?1 } }")
     long findAndPushElementById(String compoId, CompositionElement element);
-    
+
     @Query("{id: ?0, 'elements.id': ?#{[1].id} }")
     @Update("{ '$set': { 'elements.$': ?1 } }")
     long findAndSetElementByIdAndElementsId(String compoId, CompositionElement element);
-    
+
     @Query("{id: ?0, 'elements.id': ?1 }")
     @Update("{ '$set': { 'elements.$.x': ?2, 'elements.$.y': ?3 } }")
     long findAndSetElementPositionByIdAndElementsId(String compoId, String elementId, double x, double y);
-    
+
     @Update("{ '$pull' : { 'elements' : { id: ?1 } } }")
     long findAndPullElementById(String compoId, String elementId);
 }

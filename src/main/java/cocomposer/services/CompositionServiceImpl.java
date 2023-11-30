@@ -20,11 +20,12 @@ package cocomposer.services;
 
 import cocomposer.model.Composition;
 import cocomposer.model.CompositionRepository;
-import cocomposer.model.IdOnly;
 import cocomposer.model.Member;
 import cocomposer.model.MemberRepository;
+import cocomposer.services.websocket.CompositionWSService;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Collection;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,10 +48,14 @@ public class CompositionServiceImpl implements CompositionService {
 
     private final MemberRepository memberRepo;
 
+    private final CompositionWSService compositionWSSvc;
+
     @Autowired
-    public CompositionServiceImpl(CompositionRepository compoRepo, MemberRepository memberRepo) {
+    public CompositionServiceImpl(CompositionRepository compoRepo, MemberRepository memberRepo,
+            CompositionWSService compositionWSSvc) {
         this.compoRepo = compoRepo;
         this.memberRepo = memberRepo;
+        this.compositionWSSvc = compositionWSSvc;
     }
 
     @Override
@@ -68,7 +73,9 @@ public class CompositionServiceImpl implements CompositionService {
     public Composition getComposition(String compoId, String userId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         // Update the composition with the user as guest if it is not the case. Assume the composition exists
         if (!this.compoRepo.existsByIdAndOwnerOrGuestsId(compoId, userId)) {
-            this.compoRepo.findAndPushGuestById(compoId, Member.asMember(userId));
+            if (this.compoRepo.findAndPushGuestById(compoId, Member.asMember(userId)) < 1) {
+                LOG.warn("Guest not added!");
+            }
         }
         // Retrieve and return the composition. Throw exception if it does not exist
         return this.compoRepo.findById(compoId)
@@ -88,17 +95,24 @@ public class CompositionServiceImpl implements CompositionService {
     }
 
     @Override
-    public String updateCompositionTitle(String compoId, String newTitle) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+    public String updateCompositionTitlePersonnal(String compoId, String newTitle) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         // Attempt to set the title
         long res = this.compoRepo.findAndSetTitleById(compoId, newTitle);
         if (res < 1) {
             throw new NoSuchElementException("Unknown composition");
         }
+        // TODO: Send new title on websocket
         return newTitle;
     }
 
     @Override
-    public boolean updateCompositionCollaborative(String compoId, boolean collaborative) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+    public String updateCompositionTitleCollaborative(String compoId, String newTitle) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+        return this.updateCompositionTitlePersonnal(compoId, newTitle);
+        // Topic messages handle by websocket controller
+    }
+
+    @Override
+    public boolean updateCompositionCollaborativePersonnal(String compoId, boolean collaborative) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         // Attempt to set the collaborative indicator
         long res = this.compoRepo.findAndSetCollaborativeById(compoId, collaborative);
         if (res < 1) {
@@ -108,32 +122,37 @@ public class CompositionServiceImpl implements CompositionService {
     }
 
     @Override
-    public void deleteComposition(String compoId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
-        // Check the composition exists)
-        if (!this.compoRepo.existsById(compoId)) {
-            throw new NoSuchElementException("Unknown composition");
-        }
+    public boolean updateCompositionCollaborativeCollaborative(String compoId, boolean collaborative) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+        boolean res = this.updateCompositionCollaborativePersonnal(compoId, collaborative);
+        // Topic messages handle by websocket controller
+        return res;
+    }
 
-        // TODO: Inform and disconnect active users on this map before deleting it
+    @Override
+    public void deleteComposition(String compoId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
+        // Check the composition exists : retrieve it as we need the guest list)
+        final Composition composition = this.compoRepo.findById(compoId)
+                .orElseThrow(() -> new NoSuchElementException("Unknown composition"));
+
+        // Inform and disconnect active users on this map before deleting it
+        this.compositionWSSvc.informCompositionWillBeDeleted(composition);
         // Delete the map
         this.compoRepo.deleteById(compoId);
     }
 
     @Override
     public long deleteAllOwnedCompositionsFromUser(String userId) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
-        // Retrieve all owned composition ids
-        final Collection<String> ownedCompositionIds = this.compoRepo
-                .findCompositionIdsByOwner(Member.asMember(userId)).map(IdOnly::id).toList();
-        // if collection empty, stop here
-        if (ownedCompositionIds.isEmpty()) {
+        // Retrieve all owned composition
+        final Collection<Composition> ownedCompositions = this.compoRepo
+                .findCompositionsByOwner(Member.asMember(userId)).toList();
+        if (ownedCompositions.isEmpty()) {
             return 0L;
         }
-
-        // Create a collection of ConceptMap wrapper
-        //final Collection<Composition> ownedCompositions = ownedCompositionIds.stream().map(Composition::asComposition).toList();
-        // TODO: Inform and disconnect active users from any of thes maps
+        final List<String> compositionIds = ownedCompositions.stream().map(Composition::getId).toList();
+        //  Inform and disconnect active users from any of thes maps
+        ownedCompositions.forEach((composition) -> this.compositionWSSvc.informCompositionWillBeDeleted(composition));
         // Delete the maps
-        return this.compoRepo.deleteByIdIn(ownedCompositionIds);
+        return this.compoRepo.deleteByIdIn(compositionIds);
     }
 
 }

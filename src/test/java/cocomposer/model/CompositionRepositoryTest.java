@@ -22,7 +22,6 @@ import cocomposer.config.PasswordEncoderTestConfig;
 import cocomposer.config.TestDatasetConfig;
 import cocomposer.config.TestDatasetGenerator;
 import cocomposer.configuration.MongoConfiguration;
-import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -114,39 +113,71 @@ public class CompositionRepositoryTest {
                 this.testDataset.getTestInstances().getAdmin().getId()))
                 .as("Compo Mem1_2 of guest admin does not exist").isFalse();
     }
-    
+
     @Test
     public void testCanUserEditCompo() {
-        assertThat(this.testedRepo.canUserEditCompo(
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
                 this.testDataset.getTestInstances().getCompAdmin1().getId(),
                 this.testDataset.getTestInstances().getAdmin().getId()))
-                .as("Compo admin1 of owner admin can edit compo (owner even if not collaborative)").isTrue();
-        assertThat(this.testedRepo.canUserEditCompo(
+                .as("Compo admin1 of owner admin can edit compo personnaly (owner)").isTrue();
+        assertThat(this.testedRepo.canUserEditCollabCompo(
+                this.testDataset.getTestInstances().getCompAdmin1().getId(),
+                this.testDataset.getTestInstances().getAdmin().getId()))
+                .as("Compo admin1 of owner admin cannot edit compo collaborativement (not collaborative)").isFalse();
+
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
                 this.testDataset.getTestInstances().getCompMem1_1().getId(),
                 this.testDataset.getTestInstances().getMem1().getId()))
-                .as("Compo Mem1_1 of owner mem 1 exists (owner, even if not collaborative)").isTrue();
-        assertThat(this.testedRepo.canUserEditCompo(
+                .as("mem1 owner of Compo Mem1_1 can edit personal (owner, not collaborative)").isTrue();
+        assertThat(this.testedRepo.canUserEditCollabCompo(
+                this.testDataset.getTestInstances().getCompMem1_1().getId(),
+                this.testDataset.getTestInstances().getMem1().getId()))
+                .as("mem1 owner of Compo Mem1_1 cannot edit collaborative (owner, not collaborative)").isFalse();
+
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
                 this.testDataset.getTestInstances().getCompMem1_2().getId(),
                 this.testDataset.getTestInstances().getMem1().getId()))
-                .as("Compo Mem1_2 of owner mem 1 exists (owner and collaborative)").isTrue();
-        
-        assertThat(this.testedRepo.canUserEditCompo(
+                .as("mem1 owner of Compo Mem1_2 cannot edit personnal (owner and collaborative)").isFalse();
+        assertThat(this.testedRepo.canUserEditCollabCompo(
+                this.testDataset.getTestInstances().getCompMem1_2().getId(),
+                this.testDataset.getTestInstances().getMem1().getId()))
+                .as("mem1 owner of Compo Mem1_2 can edit collab (owner and collaborative)").isTrue();
+
+        assertThat(this.testedRepo.canUserEditCollabCompo(
                 this.testDataset.getTestInstances().getCompAdmin1().getId(),
                 this.testDataset.getTestInstances().getMem1().getId()))
-                .as("Compo admin1 of mem 1 cannot edit compo (not collaborative and not guest nor owner)").isFalse();
-        assertThat(this.testedRepo.canUserEditCompo(
+                .as("mem 1 guest of Compo admin1 cannot edit collab compo (not collaborative and not guest nor owner)").isFalse();
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
+                this.testDataset.getTestInstances().getCompAdmin1().getId(),
+                this.testDataset.getTestInstances().getMem1().getId()))
+                .as("mem 1 guest of Compo admin1 cannot edit personnal compo (not collaborative and not guest nor owner)").isFalse();
+
+        assertThat(this.testedRepo.canUserEditCollabCompo(
                 this.testDataset.getTestInstances().getCompMem1_2().getId(),
                 this.testDataset.getTestInstances().getAdmin().getId()))
-                .as("Compo Mem1_2 of guest admin cannot edit compo (collaborative but not guest nor owner)").isFalse();
-        assertThat(this.testedRepo.canUserEditCompo(
+                .as("admin guest of Compo Mem1_2 cannot edit collab compo (collaborative but not guest nor owner)").isFalse();
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
+                this.testDataset.getTestInstances().getCompMem1_2().getId(),
+                this.testDataset.getTestInstances().getAdmin().getId()))
+                .as("admin guest of Compo Mem1_2 cannot edit personnal compo (collaborative but not guest nor owner)").isFalse();
+
+        assertThat(this.testedRepo.canUserEditCollabCompo(
                 this.testDataset.getTestInstances().getCompMem1_1().getId(),
                 this.testDataset.getTestInstances().getMem2().getId()))
-                .as("Compo Mem1_1 of guest mem 2 cannot edit compo (guest but not collaborative)").isFalse();
-        
-        assertThat(this.testedRepo.canUserEditCompo(
+                .as("mem2 guest of Compo Mem1_1 cannot edit collab compo (guest but not collaborative)").isFalse();
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
+                this.testDataset.getTestInstances().getCompMem1_1().getId(),
+                this.testDataset.getTestInstances().getMem2().getId()))
+                .as("mem2 guest of Compo Mem1_1 cannot edit personnal compo (guest but not collaborative)").isFalse();
+
+        assertThat(this.testedRepo.canUserEditCollabCompo(
                 this.testDataset.getTestInstances().getCompMem1_2().getId(),
                 this.testDataset.getTestInstances().getMem2().getId()))
-                .as("Compo Mem1_2 of guest mem 2 can edit compo (guest and collaborative").isTrue();
+                .as("mem2 guest of Compo Mem1_2 can edit collab compo (guest and collaborative").isTrue();
+        assertThat(this.testedRepo.canUserEditPersonnalCompo(
+                this.testDataset.getTestInstances().getCompMem1_2().getId(),
+                this.testDataset.getTestInstances().getMem2().getId()))
+                .as("mem2 guest of Compo Mem1_2 cannot edit personnal compo (guest and collaborative").isFalse();
     }
 
     @Test
@@ -281,7 +312,7 @@ public class CompositionRepositoryTest {
         res = this.testedRepo.findAndPushElementById(compoId, newCE);
         assertThat(res).as("Same Element properly added twice").isEqualTo(1);
     }
-    
+
 //    @Test
 //    public void testFindAndPushElementByIdKOOnBadElement() {
 //        final String compoId = this.testDataset.getTestInstances().getCompAdmin1().getId();
@@ -298,7 +329,6 @@ public class CompositionRepositoryTest {
 //                .as("Bad element id is rejected")
 //                .isInstanceOf(ConstraintViolationException.class);
 //    }
-
     @Test
     public void testFindAndSetElementByIdAndElementsId() {
         final String compoId = this.testDataset.getTestInstances().getCompAdmin1().getId();

@@ -44,13 +44,11 @@ public class CoCompositionPermissionEvaluator implements PermissionEvaluator {
     public boolean hasPermission(Authentication authentication, Object targetDomainObject, Object permission) {
         try {
             if (targetDomainObject == null) {
-                LOG.info("Received null targetDomainObject to check permission");
                 return false;
             }
             if (targetDomainObject instanceof Composition composition) {
                 return this.hasPermission(authentication, composition.getId(), "composition", permission);
             } else {
-                LOG.info("Received unmanageable targetDomainObject to check permission (" + targetDomainObject.getClass().getName() + ")");
                 return false;
             }
         } catch (Exception ex) {
@@ -102,8 +100,11 @@ public class CoCompositionPermissionEvaluator implements PermissionEvaluator {
             case "own" -> {
                 return this.compoRepo.existsByIdAndOwnerId(mapId, userId);
             }
-            case "edit" -> {
-                return this.compoRepo.canUserEditCompo(mapId, userId);
+            case "edit-personnal" -> {
+                return this.compoRepo.canUserEditPersonnalCompo(mapId, userId);
+            }
+            case "edit-collaborative" -> {
+                return this.compoRepo.canUserEditCollabCompo(mapId, userId);
             }
             default -> {
                 LOG.error("Received unmanageable permission for map: \"" + permission + "\"");

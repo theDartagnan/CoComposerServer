@@ -41,7 +41,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @author Remi Venant
  */
-@ActiveProfiles("mongo-test")
+@ActiveProfiles({"mongo-test", "no-ext-broker"})
 @Import(TestDatasetConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class CompositionElementServiceTest {
@@ -82,7 +82,7 @@ public class CompositionElementServiceTest {
         String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
         CompositionElement newElement = new CompositionElement("NEW-ELEM-1", "rect", null, 10, 30);
 
-        CompositionElement res = this.testedService.addElement(compoId, newElement);
+        CompositionElement res = this.testedService.addElementPersonnal(compoId, newElement);
         assertThat(res).isNotNull();
     }
 
@@ -93,19 +93,30 @@ public class CompositionElementServiceTest {
         String compoId = this.testDataset.getTestInstances().getCompMem1_1().getId();
         CompositionElement newElement = new CompositionElement("NEW-ELEM-1", "rect", null, 10, 30);
 
-        CompositionElement res = this.testedService.addElement(compoId, newElement);
+        CompositionElement res = this.testedService.addElementPersonnal(compoId, newElement);
         assertThat(res).isNotNull();
     }
 
     // We test a collab compo with a non admin guest: compMem1_2 with mem2 as guest
     @Test
     @WithUserDetails(value = "mem2@collamap.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
-    public void testAddElementOkForGuestAndCollaborativeMap() {
+    public void testAddElementCollaborativeOkForGuestAndCollaborativeMap() {
         String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
         CompositionElement newElement = new CompositionElement("NEW-ELEM-1", "rect", null, 10, 30);
 
-        CompositionElement res = this.testedService.addElement(compoId, newElement);
+        CompositionElement res = this.testedService.addElementCollaborative(compoId, newElement);
         assertThat(res).isNotNull();
+    }
+
+    @Test
+    @WithUserDetails(value = "mem2@collamap.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    public void testAddElementPersonnalKoForGuestAndCollaborativeMap() {
+        String compoId = this.testDataset.getTestInstances().getCompMem1_2().getId();
+        CompositionElement newElement = new CompositionElement("NEW-ELEM-1", "rect", null, 10, 30);
+        assertThatThrownBy(()
+                -> this.testedService.addElementPersonnal(compoId, newElement))
+                .as("personnal call for collaborative compo rejected")
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     // We test a non collab compo with a non admin guest: compMem1_1 with mem2 as guest
@@ -114,9 +125,9 @@ public class CompositionElementServiceTest {
     public void testAddElementKOForGuestAndNotCollaborativeMap() {
         String compoId = this.testDataset.getTestInstances().getCompMem1_1().getId();
         CompositionElement newElement = new CompositionElement("NEW-ELEM-1", "rect", null, 10, 30);
-        
+
         assertThatThrownBy(()
-                -> this.testedService.addElement(compoId, newElement))
+                -> this.testedService.addElementPersonnal(compoId, newElement))
                 .as("No admin and guest for non collab compo rejected")
                 .isInstanceOf(AccessDeniedException.class);
     }
@@ -127,9 +138,9 @@ public class CompositionElementServiceTest {
     public void testAddElementKOForOthers() {
         String compoId = this.testDataset.getTestInstances().getCompMem2_1().getId();
         CompositionElement newElement = new CompositionElement("NEW-ELEM-1", "rect", null, 10, 30);
-        
+
         assertThatThrownBy(()
-                -> this.testedService.addElement(compoId, newElement))
+                -> this.testedService.addElementPersonnal(compoId, newElement))
                 .as("No admin and guest for non collab compo rejected")
                 .isInstanceOf(AccessDeniedException.class);
     }

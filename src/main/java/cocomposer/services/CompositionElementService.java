@@ -32,9 +32,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
  * @author Remi Venant
  */
 public interface CompositionElementService {
+
     /**
      * Add a new composition element to a composition
-     * 
+     *
      * @param compoId the composition id
      * @param elementInfo the composition element info
      * @return the created composition element
@@ -43,57 +44,129 @@ public interface CompositionElementService {
      * @thorws DuplicateKeyException if element already present
      * @throws NoSuchElementException if the composition does not exist
      */
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit'))")
-    CompositionElement addElement(
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-personnal'))")
+    CompositionElement addElementPersonnal(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
             @NotNull CompositionElement elementInfo
     ) throws AccessDeniedException, ConstraintViolationException, DuplicateKeyException, NoSuchElementException;
-    
+
+    /**
+     * Add a new composition element to a composition
+     *
+     * @param compoId the composition id
+     * @param elementInfo the composition element info
+     * @return the created composition element
+     * @throws AccessDeniedException if not authorized
+     * @throws ConstraintViolationException if invalid parameter
+     * @thorws DuplicateKeyException if element already present
+     * @throws NoSuchElementException if the composition does not exist
+     */
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-collaborative'))")
+    CompositionElement addElementCollaborative(
+            @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
+            @NotNull CompositionElement elementInfo
+    ) throws AccessDeniedException, ConstraintViolationException, DuplicateKeyException, NoSuchElementException;
+
     /**
      * Update a composition element.
-     * 
+     *
      * @param compoId the composition id
      * @param elementInfo the composition element to update
      * @return the updated composition element
      * @throws AccessDeniedException if not authorized
      * @throws ConstraintViolationException if invalid parameter
-     * @throws NoSuchElementException if the composition or the composition element does not exist
+     * @throws NoSuchElementException if the composition or the composition
+     * element does not exist
      */
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit'))")
-    CompositionElement updateElement(
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-personnal'))")
+    CompositionElement updateElementPersonnal(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
             @NotNull CompositionElement elementInfo
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
-    
+
+    /**
+     * Update a composition element.
+     *
+     * @param compoId the composition id
+     * @param elementInfo the composition element to update
+     * @return the updated composition element
+     * @throws AccessDeniedException if not authorized
+     * @throws ConstraintViolationException if invalid parameter
+     * @throws NoSuchElementException if the composition or the composition
+     * element does not exist
+     */
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-collaborative'))")
+    CompositionElement updateElementCollaborative(
+            @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
+            @NotNull CompositionElement elementInfo
+    ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
+
     /**
      * Update a composition element position.
-     * 
+     *
      * @param compoId the composition id
      * @param elementId the composition element id
      * @param x the abscissa
      * @param y the ordinate
      * @throws AccessDeniedException if not authorized
      * @throws ConstraintViolationException if invalid parameter
-     * @throws NoSuchElementException if the composition or the composition element does not exist
+     * @throws NoSuchElementException if the composition or the composition
+     * element does not exist
      */
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit'))")
-    void updateElementPosition(
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-personnal'))")
+    void updateElementPositionPersonnal(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
             @NotNull @Pattern(regexp = "[\\-\\w\\#]+", flags = Pattern.Flag.CASE_INSENSITIVE) String elementId,
             double x, double y
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
-    
+
+    /**
+     * Update a composition element position.
+     *
+     * @param compoId the composition id
+     * @param elementId the composition element id
+     * @param x the abscissa
+     * @param y the ordinate
+     * @throws AccessDeniedException if not authorized
+     * @throws ConstraintViolationException if invalid parameter
+     * @throws NoSuchElementException if the composition or the composition
+     * element does not exist
+     */
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-collaborative'))")
+    void updateElementPositionCollaborative(
+            @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
+            @NotNull @Pattern(regexp = "[\\-\\w\\#]+", flags = Pattern.Flag.CASE_INSENSITIVE) String elementId,
+            double x, double y
+    ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
+
     /**
      * Delete a composition element.
-     * 
+     *
      * @param compoId the composition id
      * @param elementId the composition element id
      * @throws AccessDeniedException if not authorized
      * @throws ConstraintViolationException if invalid parameter
-     * @throws NoSuchElementException if the composition or the composition element does not exist
+     * @throws NoSuchElementException if the composition or the composition
+     * element does not exist
      */
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit'))")
-    void deleteElement(
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-personnal'))")
+    void deleteElementPersonnal(
+            @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
+            @NotNull @Pattern(regexp = "[\\-\\w\\#]+", flags = Pattern.Flag.CASE_INSENSITIVE) String elementId
+    ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
+
+    /**
+     * Delete a composition element.
+     *
+     * @param compoId the composition id
+     * @param elementId the composition element id
+     * @throws AccessDeniedException if not authorized
+     * @throws ConstraintViolationException if invalid parameter
+     * @throws NoSuchElementException if the composition or the composition
+     * element does not exist
+     */
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'edit-collaborative'))")
+    void deleteElementCollaborative(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
             @NotNull @Pattern(regexp = "[\\-\\w\\#]+", flags = Pattern.Flag.CASE_INSENSITIVE) String elementId
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;

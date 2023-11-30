@@ -59,7 +59,7 @@ public class Member {
     @Size(min = 1, max = 100)
     private String lastname;
 
-    @JsonView(MemberViews.Administrative.class)
+    @JsonView(MemberViews.Never.class)
     private Boolean adminFlag;
 
     protected Member() {
@@ -103,7 +103,7 @@ public class Member {
         this.lastname = lastname;
     }
 
-    @JsonView(MemberViews.Normal.class)
+    @JsonView(MemberViews.Administrative.class)
     public boolean isAdmin() {
         return Boolean.TRUE.equals(this.adminFlag);
     }

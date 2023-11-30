@@ -25,7 +25,6 @@ import cocomposer.services.AccountService;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,7 +52,7 @@ public class AccountRestController {
     }
 
     @GetMapping("myself")
-    @JsonView(MemberViews.Normal.class)
+    @JsonView(MemberViews.Administrative.class)
     public ResponseEntity<Member> getMyself(@AuthenticationPrincipal CoComposerMemberDetails currentUser) {
         if (currentUser == null) {
             return ResponseEntity.noContent().build();
@@ -63,7 +62,7 @@ public class AccountRestController {
     }
 
     @PostMapping
-    @JsonView(MemberViews.Normal.class)
+    @JsonView(MemberViews.Administrative.class)
     public Member createAccount(@RequestBody MemberCreation memberCreationInfo) {
         if (memberCreationInfo == null
                 || memberCreationInfo.memberInfo() == null
@@ -74,7 +73,7 @@ public class AccountRestController {
     }
 
     @PatchMapping("{userId:[abcdef0-9]{24}}")
-    @JsonView(MemberViews.Normal.class)
+    @JsonView(MemberViews.Administrative.class)
     public Member patchAccount(@PathVariable String userId, @RequestBody Member memberInfo) {
         if (memberInfo == null) {
             throw new IllegalArgumentException("Missing update data");
@@ -86,8 +85,9 @@ public class AccountRestController {
     }
 
     @DeleteMapping("{userId:[abcdef0-9]{24}}")
-    public void deleteAccount(@PathVariable String userId) {
+    public ResponseEntity deleteAccount(@PathVariable String userId) {
         this.accountSvc.deleteAccount(userId);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("{userId:[abcdef0-9]{24}}/password")

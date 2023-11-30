@@ -69,7 +69,7 @@ public class CompositionElement {
         return id;
     }
 
-    protected void setId(String id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -110,11 +110,11 @@ public class CompositionElement {
     public Map<String, Object> getExtraProperties() {
         return extraProperties;
     }
-    
+
     public void setExtraProperties(Map<String, Object> extraProperties) {
         this.extraProperties = extraProperties;
     }
-    
+
     @JsonAnySetter
     public void addExtraProperties(String key, Object value) {
         if (this.extraProperties == null) {
@@ -131,7 +131,7 @@ public class CompositionElement {
 
     @Override
     public String toString() {
-        return "CompositionElement{" + "style=" + style + ", x=" + x + ", y=" + y + ", num extraProperties=" + extraProperties.size() + '}';
+        return "CompositionElement{" + "style=" + style + ", x=" + x + ", y=" + y + ", num extraProperties=" + (extraProperties == null ? "null" : extraProperties.size()) + '}';
     }
 
     @Override
@@ -156,5 +156,4 @@ public class CompositionElement {
         return Objects.equals(this.id, other.id);
     }
 
-    
 }

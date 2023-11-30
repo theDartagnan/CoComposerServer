@@ -31,6 +31,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
  * @author Remi Venant
  */
 public interface CompositionService {
+
     /**
      * Get users' owned composition resume, compositions whom he is an editor.
      * This service will not check for user account existence.
@@ -46,8 +47,8 @@ public interface CompositionService {
     ) throws AccessDeniedException, ConstraintViolationException;
 
     /**
-     * Get a composition by its id. 
-     * If the user is not the owner, s.he will be automatically added as a guest 
+     * Get a composition by its id. If the user is not the owner, s.he will be
+     * automatically added as a guest
      *
      * @param compoId the map id
      * @param userId
@@ -64,8 +65,8 @@ public interface CompositionService {
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
 
     /**
-     * Create a Composition for a given user This service will check for user account
-     * existence to ensure consistency.
+     * Create a Composition for a given user This service will check for user
+     * account existence to ensure consistency.
      *
      * @param ownerUserId the owner user id
      * @param compositionInfo the composition info
@@ -81,7 +82,7 @@ public interface CompositionService {
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
 
     /**
-     * Update composition title.
+     * Update personnal composition title.
      *
      * @param compoId the composition id
      * @param newTitle the new tittle
@@ -91,12 +92,29 @@ public interface CompositionService {
      * @throws ConstraintViolationException if parameter invalid
      * @throws NoSuchElementException if composition does not exist
      */
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'own'))")
-    String updateCompositionTitle(
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'own') and hasPermission(#compoId, 'composition', 'edit-personnal'))")
+    String updateCompositionTitlePersonnal(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
             @NotNull String newTitle
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
-    
+
+    /**
+     * Update collaborative composition title.
+     *
+     * @param compoId the composition id
+     * @param newTitle the new tittle
+     * @return the updated title
+     * @throws AccessDeniedException if not authorized, including if the
+     * ownerUserId is not the owner of the composition
+     * @throws ConstraintViolationException if parameter invalid
+     * @throws NoSuchElementException if composition does not exist
+     */
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'own') and hasPermission(#compoId, 'composition', 'edit-collaborative'))")
+    String updateCompositionTitleCollaborative(
+            @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
+            @NotNull String newTitle
+    ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
+
     /**
      * Update composition collaborative indicator.
      *
@@ -108,15 +126,32 @@ public interface CompositionService {
      * @throws ConstraintViolationException if parameter invalid
      * @throws NoSuchElementException if composition does not exist
      */
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'own'))")
-    boolean updateCompositionCollaborative(
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'own') and hasPermission(#compoId, 'composition', 'edit-personnal'))")
+    boolean updateCompositionCollaborativePersonnal(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
             @NotNull boolean collaborative
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
 
     /**
-     * Delete a composition. Will inform online users that are actively working on this
-     * map of this deletion. 
+     * Update composition collaborative indicator.
+     *
+     * @param compoId the composition id
+     * @param collaborative the collaborative indicator
+     * @return the updated collaborative indicator
+     * @throws AccessDeniedException if not authorized, including if the
+     * ownerUserId is not the owner of the composition
+     * @throws ConstraintViolationException if parameter invalid
+     * @throws NoSuchElementException if composition does not exist
+     */
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('USER') and hasPermission(#compoId, 'composition', 'own') and hasPermission(#compoId, 'composition', 'edit-collaborative'))")
+    boolean updateCompositionCollaborativeCollaborative(
+            @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String compoId,
+            @NotNull boolean collaborative
+    ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
+
+    /**
+     * Delete a composition. Will inform online users that are actively working
+     * on this map of this deletion.
      *
      * @param compoId the map id
      * @throws AccessDeniedException if not authorized, including if the
@@ -130,9 +165,9 @@ public interface CompositionService {
     ) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException;
 
     /**
-     * Delete all compositions a user owns. Will inform online users that are actively
-     * working on one of these maps of this deletion. This service will not
-     * check for user account existence.
+     * Delete all compositions a user owns. Will inform online users that are
+     * actively working on one of these maps of this deletion. This service will
+     * not check for user account existence.
      *
      * @param userId the user id
      * @return the number of compositions deleted

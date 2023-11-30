@@ -102,20 +102,18 @@ public class CompositionElementServiceImplTest {
     public void testAddElement() {
         String compoId = this.testDataset.getTestInstances().getCompMem1_1().getId();
 
-        // Attempt to add an existing element
+        // Attempt to add an existing element will create an new id
         final CompositionElement dupElem = new CompositionElement(
                 this.testDataset.getTestInstances().getCompMem1_1().getElements().get(0).getId(),
                 "circle", null, 0, 0);
-        assertThatThrownBy(()
-                -> this.testedService.addElement(compoId, dupElem))
-                .as("duplicated element is rejected")
-                .isInstanceOf(DuplicateKeyException.class);
+        final CompositionElement savedDupElem = this.testedService.addElementPersonnal(compoId, dupElem);
+        assertThat(savedDupElem.getId()).isNotEqualTo(this.testDataset.getTestInstances().getCompMem1_1().getElements().get(0).getId());
 
         // Attempt to add new element
         final CompositionElement elemToCreate = new CompositionElement(
                 "NEW-ID-COMP", "circle", null, 0, 0);
-        final CompositionElement returnedElem = this.testedService.addElement(compoId, elemToCreate);
-        assertThat(returnedElem).as("Returned elem mathces").isEqualTo(elemToCreate);
+        final CompositionElement returnedElem = this.testedService.addElementPersonnal(compoId, elemToCreate);
+        assertThat(returnedElem.getId()).as("Returned elem do not have the same id").isNotEqualTo("NEW-ID-COMP");
 
         final Composition dbCompo = this.compoRepo.findById(compoId).get();
         assertThat(dbCompo.getElements()).as("Element is in db").contains(elemToCreate);
@@ -132,7 +130,7 @@ public class CompositionElementServiceImplTest {
         final CompositionElement elemToCreate = new CompositionElement(
                 "NEW-ID-COMP", "circle", null, 0, 0);
         assertThatThrownBy(()
-                -> this.testedService.updateElement(compoId, elemToCreate))
+                -> this.testedService.updateElementPersonnal(compoId, elemToCreate))
                 .as("unknown element is rejected")
                 .isInstanceOf(NoSuchElementException.class);
 
@@ -140,7 +138,7 @@ public class CompositionElementServiceImplTest {
                 this.testDataset.getTestInstances().getCompMem1_1().getElements().get(0).getId(),
                 "circle", "color:red;", 10, 10);
         updatedElem.addExtraProperties("r", 100);
-        final CompositionElement returnedElem = this.testedService.updateElement(compoId, updatedElem);
+        final CompositionElement returnedElem = this.testedService.updateElementPersonnal(compoId, updatedElem);
         assertThat(returnedElem).as("Returned elem mathces").isEqualTo(updatedElem);
 
         final Composition dbCompo = this.compoRepo.findById(compoId).get();
@@ -165,16 +163,16 @@ public class CompositionElementServiceImplTest {
         String elemId = this.testDataset.getTestInstances().getCompMem1_1().getElements().get(0).getId();
         double x = 1543;
         double y = 5643;
-        
-        this.testedService.updateElementPosition(compoId, elemId, x, y);
+
+        this.testedService.updateElementPositionPersonnal(compoId, elemId, x, y);
         final Composition dbCompo = this.compoRepo.findById(compoId).get();
         final CompositionElement dbElem = dbCompo.getElements().stream().filter((e) -> e.getId().equals(elemId))
                 .findFirst().orElse(null);
         assertThat(dbElem).as("Element present in db").isNotNull();
         assertThat(dbElem).extracting("x", "y")
                 .as("X and Y properties updated")
-                .containsExactly(x ,y);
-        
+                .containsExactly(x, y);
+
     }
 
     /**
@@ -186,13 +184,13 @@ public class CompositionElementServiceImplTest {
 
         // Attempt to remove an inexisting element
         assertThatThrownBy(()
-                -> this.testedService.deleteElement(compoId, "UKN-ELEM-ID"))
+                -> this.testedService.deleteElementPersonnal(compoId, "UKN-ELEM-ID"))
                 .as("unknown element is rejected")
                 .isInstanceOf(NoSuchElementException.class);
 
         String elemId = this.testDataset.getTestInstances().getCompMem1_1().getElements().get(0).getId();
-        this.testedService.deleteElement(compoId, elemId);
-        
+        this.testedService.deleteElementPersonnal(compoId, elemId);
+
         final Composition dbCompo = this.compoRepo.findById(compoId).get();
         final Optional<CompositionElement> dbElem = dbCompo.getElements().stream().filter((e) -> e.getId().equals(elemId))
                 .findFirst();

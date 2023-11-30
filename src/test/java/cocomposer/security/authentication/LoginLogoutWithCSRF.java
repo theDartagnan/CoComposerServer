@@ -51,7 +51,7 @@ import org.springframework.web.context.WebApplicationContext;
  *
  * @author Remi Venant
  */
-@ActiveProfiles({"mongo-test", "secu-logs", "secu-csrf"})
+@ActiveProfiles({"mongo-test", "secu-logs", "secu-csrf", "no-ext-broker"})
 @Import(TestDatasetConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class LoginLogoutWithCSRF {
