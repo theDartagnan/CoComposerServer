@@ -31,6 +31,7 @@ import cocomposer.security.authentification.CoComposerMemberDetails;
 import cocomposer.services.CompositionElementService;
 import cocomposer.services.CompositionService;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,9 +74,12 @@ public class CompositionWebsocketController {
             throw new AccessDeniedException("No Member. Proper Authentication required");
         }
 
-        // Set / override author and composition id info
+        // Set / override author, composition id info and orderDateTime
         order.setCompositionId(compoId);
         order.setAuthorEmail(author.getEmail());
+        order.setOrderDatetime(LocalDateTime.now());
+        
+        // Specific case : 
 
         return switch (order.getOrderType()) {
             case "compositiontitleChanged" ->
@@ -102,7 +106,7 @@ public class CompositionWebsocketController {
 
     private CompositionCollaborativeChangedOrder handleCompositionCollaborativeChange(CompositionCollaborativeChangedOrder order) {
         this.compositionSvc.updateCompositionCollaborativeCollaborative(order.getCompositionId(), order.isCollaborative());
-        return order;
+        return null; // Specific case : the notification to other user is handled in service as it depends of the new collaborative value
     }
 
     private ElementAddedOrder handleElementAdded(ElementAddedOrder order) {

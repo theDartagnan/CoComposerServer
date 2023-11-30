@@ -19,7 +19,9 @@
 package cocomposer.services.websocket;
 
 import cocomposer.model.Composition;
+import cocomposer.model.CompositionRepository;
 import cocomposer.model.Member;
+import cocomposer.model.compositionOrder.CompositionCollaborativeChangedOrder;
 import cocomposer.model.compositionOrder.CompositionDeletedOrder;
 import cocomposer.security.CurrentUserInformationService;
 import cocomposer.security.authentification.CoComposerMemberDetails;
@@ -27,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -42,11 +45,16 @@ public class CompositionWSServiceImpl implements CompositionWSService {
 
     private final CurrentUserInformationService currentUserInformationSvc;
 
-    public CompositionWSServiceImpl(SimpMessagingTemplate msgTemplate, CurrentUserInformationService currentUserInformationSvc) {
+    private final CompositionRepository compositionRepo;
+
+    public CompositionWSServiceImpl(SimpMessagingTemplate msgTemplate,
+            CurrentUserInformationService currentUserInformationSvc, CompositionRepository compositionRepo) {
         this.msgTemplate = msgTemplate;
         this.currentUserInformationSvc = currentUserInformationSvc;
+        this.compositionRepo = compositionRepo;
     }
 
+    @Async
     @Override
     public void informCompositionWillBeDeleted(Composition composition) {
         CoComposerMemberDetails author = this.currentUserInformationSvc.getUserDetails();
@@ -57,7 +65,7 @@ public class CompositionWSServiceImpl implements CompositionWSService {
             authorEmail = author.getEmail();
         }
         final String compoId = composition.getId();
-        final String wsQueueEndpoint = String.format("/queue/compositions");
+        final String wsQueueEndpoint = "/queue/compositions";
 
         final CompositionDeletedOrder order = new CompositionDeletedOrder();
         order.setCompositionId(compoId);
@@ -70,6 +78,30 @@ public class CompositionWSServiceImpl implements CompositionWSService {
             }
         });
 
+    }
+
+    @Async
+    @Override
+    public void informCompositionCollaborativeChanged(String compoId, boolean collaborative) {
+        final CompositionCollaborativeChangedOrder order = new CompositionCollaborativeChangedOrder();
+        order.setCompositionId(compoId);
+        order.setCollaborative(collaborative);
+
+        if (collaborative) {
+            final String wsQueueEndpoint = "/queue/compositions";
+            this.compositionRepo.findById(compoId).ifPresent((composition) -> {
+                composition.getGuests().forEach((Member guest) -> {
+                    try {
+                        this.msgTemplate.convertAndSendToUser(guest.getId(), wsQueueEndpoint, order);
+                    } catch (MessagingException ex) {
+                        LOG.warn("Unable to send composition collaboartive change order to user " + guest.getEmail() + ": " + ex.getMessage());
+                    }
+                });
+            });
+        } else {
+            final String wsTopicEndpoint = String.format("/queue/compositions.%s", compoId);
+            this.msgTemplate.convertAndSend(wsTopicEndpoint, order);
+        }
     }
 
 }

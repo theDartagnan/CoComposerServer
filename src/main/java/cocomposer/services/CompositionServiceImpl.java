@@ -101,7 +101,7 @@ public class CompositionServiceImpl implements CompositionService {
         if (res < 1) {
             throw new NoSuchElementException("Unknown composition");
         }
-        // TODO: Send new title on websocket
+        // update composition title handle by websocket controller
         return newTitle;
     }
 
@@ -118,6 +118,7 @@ public class CompositionServiceImpl implements CompositionService {
         if (res < 1) {
             throw new NoSuchElementException("Unknown composition");
         }
+        this.compositionWSSvc.informCompositionCollaborativeChanged(compoId, collaborative);
         return collaborative;
     }
 

@@ -21,6 +21,7 @@ package cocomposer.model.compositionOrder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.time.LocalDateTime;
 
 /**
  *
@@ -44,6 +45,8 @@ public class CompositionOrder {
 
     private String authorEmail;
 
+    private LocalDateTime orderDatetime;
+
     public String getOrderType() {
         return orderType;
     }
@@ -66,6 +69,14 @@ public class CompositionOrder {
 
     public void setAuthorEmail(String authorEmail) {
         this.authorEmail = authorEmail;
+    }
+
+    public LocalDateTime getOrderDatetime() {
+        return orderDatetime;
+    }
+
+    public void setOrderDatetime(LocalDateTime orderDatetime) {
+        this.orderDatetime = orderDatetime;
     }
 
 }

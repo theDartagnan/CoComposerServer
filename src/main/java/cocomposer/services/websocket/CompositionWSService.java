@@ -36,4 +36,15 @@ public interface CompositionWSService {
      * @param composition the composition that will be deleted
      */
     void informCompositionWillBeDeleted(Composition composition);
+
+    /**
+     * Inform all user that a collaborative composition changed. If the
+     * collaborative goes from true to false, inform editing users through the
+     * specific composition topic. If the collaborative goes from false to true,
+     * inform connected users through their general composition queue.
+     *
+     * @param compoId the composition id
+     * @param collaborative the new value of collaborative
+     */
+    void informCompositionCollaborativeChanged(String compoId, boolean collaborative);
 }
