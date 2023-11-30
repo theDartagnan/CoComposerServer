@@ -46,7 +46,7 @@ services:
       retries: 20
       start_period: 5s
 
-  chat-server:
+  cocomposer-server:
     image: maven:3.9.5-amazoncorretto-21
     depends_on:
       compo-db:
