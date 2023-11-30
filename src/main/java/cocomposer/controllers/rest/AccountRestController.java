@@ -23,6 +23,9 @@ import cocomposer.model.views.MemberViews;
 import cocomposer.security.authentification.CoComposerMemberDetails;
 import cocomposer.services.AccountService;
 import com.fasterxml.jackson.annotation.JsonView;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,9 +49,12 @@ public class AccountRestController {
 
     private final AccountService accountSvc;
 
+    private final Validator validator;
+
     @Autowired
-    public AccountRestController(AccountService accountService) {
+    public AccountRestController(AccountService accountService, Validator validator) {
         this.accountSvc = accountService;
+        this.validator = validator;
     }
 
     @GetMapping("myself")
@@ -68,6 +74,9 @@ public class AccountRestController {
                 || memberCreationInfo.memberInfo() == null
                 || memberCreationInfo.password() == null) {
             throw new IllegalArgumentException("Missing creation data");
+        }
+        if (!this.validator.validateValue(PasswordUpdate.class, "currentPassword", memberCreationInfo.password).isEmpty()) {
+            throw new IllegalArgumentException("Incorrect update password data");
         }
         return this.accountSvc.createAccount(memberCreationInfo.memberInfo(), memberCreationInfo.password());
     }
@@ -91,22 +100,53 @@ public class AccountRestController {
     }
 
     @PutMapping("{userId:[abcdef0-9]{24}}/password")
-    public void changeAccountPassword(@PathVariable String userId, @RequestBody PasswordUpdate passwordUpdate) {
-        if (passwordUpdate == null
-                || passwordUpdate.currentPassword() == null
-                || passwordUpdate.newPassword() == null) {
-            throw new IllegalArgumentException("Missing update password data");
+    public ResponseEntity changeAccountPassword(@PathVariable String userId, @RequestBody PasswordUpdate passwordUpdate) {
+        if (passwordUpdate == null || !this.validator.validate(passwordUpdate).isEmpty()) {
+            throw new IllegalArgumentException("Incorrect update password data");
         }
         this.accountSvc.updateAccountPassword(userId,
-                passwordUpdate.currentPassword(),
-                passwordUpdate.newPassword());
+                passwordUpdate.getCurrentPassword(),
+                passwordUpdate.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 
     public static record MemberCreation(Member memberInfo, String password) {
 
     }
 
-    public static record PasswordUpdate(String currentPassword, String newPassword) {
+    public static class PasswordUpdate {
+
+        @NotBlank
+        @Pattern(regexp = "[\\w%:;<>\\.\\*\\#\\$\\?\\+\\-]{8,100}", flags = Pattern.Flag.CASE_INSENSITIVE)
+        private String currentPassword;
+
+        @NotBlank
+        @Pattern(regexp = "[\\w%:;<>\\.\\*\\#\\$\\?\\+\\-]{8,100}", flags = Pattern.Flag.CASE_INSENSITIVE)
+        private String newPassword;
+
+        public PasswordUpdate() {
+        }
+
+        public PasswordUpdate(String currentPassword, String newPassword) {
+            this.currentPassword = currentPassword;
+            this.newPassword = newPassword;
+        }
+
+        public String getCurrentPassword() {
+            return currentPassword;
+        }
+
+        public void setCurrentPassword(String currentPassword) {
+            this.currentPassword = currentPassword;
+        }
+
+        public String getNewPassword() {
+            return newPassword;
+        }
+
+        public void setNewPassword(String newPassword) {
+            this.newPassword = newPassword;
+        }
 
     }
 }

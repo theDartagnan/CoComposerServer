@@ -29,6 +29,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -110,9 +112,35 @@ public class LoginLogoutWithCSRF {
         final Map authentication = Map.of("username", "mem1@collamap.com", "password", "pwd-mem1");
         this.mvc.perform(post("/api/login")
                 .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(this.jsonMapper.writeValueAsString(authentication)))
                 .andExpect(status().isForbidden())
                 .andExpect(cookie().doesNotExist(sessionCookieName));
+    }
+    
+    @Test
+    public void loginWhenInvalidCredentialAndValidCsrfTokenThenFail() throws Exception {
+        final Map authentication = Map.of("username", "mem1@collamap.com", "password", "pwd-mem2");
+        this.mvc.perform(post("/api/login")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(this.jsonMapper.writeValueAsString(authentication)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(cookie().doesNotExist(sessionCookieName));
+    }
+    
+    @Test
+    @WithUserDetails(value = "mem1@collamap.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    public void loginWhenValidCredentialAndValidCsrfTokenButAlreadyAuthenticatedThenFail() throws Exception {
+        final Map authentication = Map.of("username", "mem2@collamap.com", "password", "pwd-mem2");
+        this.mvc.perform(post("/api/login")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(this.jsonMapper.writeValueAsString(authentication)))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string(HttpHeaders.LOCATION, "/api/v1/rest/accounts/myself"));
     }
 
     @Test
@@ -137,5 +165,33 @@ public class LoginLogoutWithCSRF {
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().exists(sessionCookieName))
                 .andExpect(cookie().maxAge(sessionCookieName, 0));
+    }
+    
+    final static String TOO_LONG_MAIL =  "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm" + "@mail.com";
+    @ParameterizedTest
+    @ValueSource(strings = {"", LoginLogoutWithCSRF.TOO_LONG_MAIL, "nomail"})
+    public void loginWhenValidCsrfTokenWithViolatingUsernameThenFail(String badMail) throws Exception {
+        Map authentication = Map.of("username", badMail, "password", "pwd-mem1");
+        this.mvc.perform(post("/api/login")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(this.jsonMapper.writeValueAsString(authentication)))
+                .andExpect(status().isBadRequest())
+                .andExpect(cookie().doesNotExist(sessionCookieName));
+    }
+    
+    final static String TOO_LONG_PWD =  "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm";
+    @ParameterizedTest
+    @ValueSource(strings = {"", "short", LoginLogoutWithCSRF.TOO_LONG_PWD, "bad'char"})
+    public void loginWhenValidCsrfTokenWithViolatingPasswordThenFail(String badPass) throws Exception {
+        Map authentication = Map.of("username", "user@mail.com", "password", badPass);
+        this.mvc.perform(post("/api/login")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(this.jsonMapper.writeValueAsString(authentication)))
+                .andExpect(status().isBadRequest())
+                .andExpect(cookie().doesNotExist(sessionCookieName));
     }
 }

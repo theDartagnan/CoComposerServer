@@ -27,7 +27,6 @@ import jakarta.validation.constraints.Size;
 import java.util.NoSuchElementException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
@@ -120,7 +119,6 @@ public interface AccountService {
      * are the same
      */
     @PreAuthorize("hasRole('ADMIN') or authentication.name == #userId")
-    @PostAuthorize("returnObject == true")
     void updateAccountPassword(
             @NotNull @Pattern(regexp = "[abcdef0-9]{24}", flags = Pattern.Flag.CASE_INSENSITIVE) String userId,
             @NotBlank @Size(min = 4, max = 150) String currentClearPassword,

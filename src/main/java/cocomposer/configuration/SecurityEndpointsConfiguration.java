@@ -21,6 +21,7 @@ package cocomposer.configuration;
 import cocomposer.security.authentification.RestAuthenticationFilter;
 import cocomposer.security.csrf.CsrfCookieFilter;
 import cocomposer.security.csrf.SpaCsrfTokenRequestHandler;
+import jakarta.validation.Validator;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -93,8 +94,9 @@ public class SecurityEndpointsConfiguration {
     @Bean
     public RestAuthenticationFilter restAuthenticationFilter(
             AuthenticationManager authenticationManager,
-            HttpSessionSecurityContextRepository securityContextRepository) throws Exception {
-        RestAuthenticationFilter filter = new RestAuthenticationFilter();
+            HttpSessionSecurityContextRepository securityContextRepository,
+            Validator validator) throws Exception {
+        RestAuthenticationFilter filter = new RestAuthenticationFilter(validator);
         filter.setFilterProcessesUrl("/api/login");
         filter.setAuthenticationManager(authenticationManager);
         filter.setAuthenticationSuccessHandler(new SimpleUrlAuthenticationSuccessHandler("/api/v1/rest/accounts/myself"));

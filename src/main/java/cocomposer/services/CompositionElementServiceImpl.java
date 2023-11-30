@@ -85,10 +85,10 @@ public class CompositionElementServiceImpl implements CompositionElementService 
                 throw new NoSuchElementException("Composition or element in composition not found");
             }
         }
-
+        
         return elementInfo;
     }
-
+    
     @Override
     public CompositionElement updateElementCollaborative(String compoId, CompositionElement elementInfo) throws AccessDeniedException, ConstraintViolationException, NoSuchElementException {
         CompositionElement updatedElement = this.updateElementPersonnal(compoId, elementInfo);

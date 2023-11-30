@@ -36,7 +36,7 @@ public class CompositionElement {
 
     @JsonView(CompositionViews.Details.class)
     @NotBlank
-    @Pattern(regexp = "[\\-\\w\\#]+", flags = Pattern.Flag.CASE_INSENSITIVE)
+    @Pattern(regexp = "[\\-\\w\\#]{4, 50}", flags = Pattern.Flag.CASE_INSENSITIVE)
     private String id;
 
     @JsonView(CompositionViews.Details.class)

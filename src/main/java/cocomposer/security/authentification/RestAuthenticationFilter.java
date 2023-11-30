@@ -21,6 +21,11 @@ package cocomposer.security.authentification;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.io.IOException;
 import java.util.List;
 import org.apache.commons.logging.Log;
@@ -28,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -41,7 +47,16 @@ public class RestAuthenticationFilter extends UsernamePasswordAuthenticationFilt
 
     private static final Log LOG = LogFactory.getLog(RestAuthenticationFilter.class);
 
-    public RestAuthenticationFilter() {
+    private final Validator validator;
+
+    public RestAuthenticationFilter(Validator validator) {
+        this.validator = validator;
+        this.setPostOnly(true);
+    }
+
+    public RestAuthenticationFilter(Validator validator, AuthenticationManager authenticationManager) {
+        super(authenticationManager);
+        this.validator = validator;
         this.setPostOnly(true);
     }
 
@@ -62,14 +77,46 @@ public class RestAuthenticationFilter extends UsernamePasswordAuthenticationFilt
         try {
             ObjectMapper om = new ObjectMapper();
             LoginCredentials lc = om.readValue(request.getInputStream(), LoginCredentials.class);
+            if(!this.validator.validate(lc).isEmpty()){
+                response.sendError(HttpStatus.BAD_REQUEST.value());
+                return null;
+            }
             UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(lc.username, lc.password);
             return this.getAuthenticationManager().authenticate(token);
         } catch (IOException ex) {
             throw new AuthenticationCredentialsNotFoundException("Bad credential format");
         }
     }
-    
-    public static record LoginCredentials(String username, String password) {
-        
+
+    public static class LoginCredentials {
+
+        @NotBlank
+        @Email
+        @Size(min = 1, max = 100)
+        private String username;
+
+        @NotBlank
+        @Pattern(regexp = "[\\w%:;<>\\.\\*\\#\\$\\?\\+\\-]{8,100}", flags = Pattern.Flag.CASE_INSENSITIVE)
+        private String password;
+
+        public LoginCredentials() {
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
     }
 }
