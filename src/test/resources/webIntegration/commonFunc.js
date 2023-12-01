@@ -1,6 +1,6 @@
 /* eslint-disable no-console, no-param-reassign, no-unused-vars */
 
-const HOSTNAME = 'http://localhost:8080';
+const HOSTNAME = 'http://localhost:8080'; // 'https://la-lab4ce.univ-lemans.fr/cocomposer'; //'http://localhost:8080';
 
 function createCsrfHolder() {
   return {
@@ -21,7 +21,7 @@ function createSendHeaders(csrfHolder) {
   } else {
     const csrfCookie = getCrsfTokenFromCookie();
     if (csrfCookie) {
-      // console.log('Inject csrf token from cookie');
+      console.log('Inject csrf token from cookie');
       base['X-XSRF-TOKEN'] = csrfCookie;
     }
   }

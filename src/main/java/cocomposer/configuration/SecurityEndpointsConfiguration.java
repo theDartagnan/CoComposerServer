@@ -18,9 +18,11 @@
  */
 package cocomposer.configuration;
 
+import cocomposer.model.CompositionRepository;
 import cocomposer.security.authentification.RestAuthenticationFilter;
 import cocomposer.security.csrf.CsrfCookieFilter;
 import cocomposer.security.csrf.SpaCsrfTokenRequestHandler;
+import cocomposer.security.authorization.CompositionTopicSubscriptionAuthorizationManager;
 import jakarta.validation.Validator;
 import java.time.Duration;
 import java.util.Arrays;
@@ -46,6 +48,7 @@ import org.springframework.security.config.annotation.web.socket.EnableWebSocket
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.messaging.access.intercept.MessageAuthorizationContext;
 import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
@@ -193,10 +196,14 @@ public class SecurityEndpointsConfiguration {
     }
 
     @Bean
-    public AuthorizationManager<Message<?>> messageAuthorizationManager(MessageMatcherDelegatingAuthorizationManager.Builder messages) {
+    public AuthorizationManager<Message<?>> messageAuthorizationManager(
+            MessageMatcherDelegatingAuthorizationManager.Builder messages,
+            CompositionRepository compositionRepo) {
+        
         messages.nullDestMatcher().authenticated()
                 .simpDestMatchers("/app/compositions.*").authenticated()
-                .simpSubscribeDestMatchers("/user/queue/errors", "/user/queue/compositions", "/topic/compositions.*").authenticated()
+                .simpSubscribeDestMatchers("/user/queue/errors", "/user/queue/compositions").authenticated()
+                .simpSubscribeDestMatchers("/topic/compositions.*").access(new CompositionTopicSubscriptionAuthorizationManager(compositionRepo))
                 .anyMessage().denyAll();
         return messages.build();
     }

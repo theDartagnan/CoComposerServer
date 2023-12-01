@@ -25,6 +25,7 @@ import cocomposer.model.compositionOrder.CompositionCollaborativeChangedOrder;
 import cocomposer.model.compositionOrder.CompositionDeletedOrder;
 import cocomposer.security.CurrentUserInformationService;
 import cocomposer.security.authentification.CoComposerMemberDetails;
+import java.time.LocalDateTime;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.messaging.MessagingException;
@@ -83,9 +84,19 @@ public class CompositionWSServiceImpl implements CompositionWSService {
     @Async
     @Override
     public void informCompositionCollaborativeChanged(String compoId, boolean collaborative) {
+        CoComposerMemberDetails author = this.currentUserInformationSvc.getUserDetails();
+        String authorEmail = null;
+        if (author == null) {
+            LOG.warn("Current user is null. Cannot set author in CompositionDeletedOrder.");
+        } else {
+            authorEmail = author.getEmail();
+        }
+        
         final CompositionCollaborativeChangedOrder order = new CompositionCollaborativeChangedOrder();
         order.setCompositionId(compoId);
+        order.setAuthorEmail(authorEmail);
         order.setCollaborative(collaborative);
+        order.setOrderDatetime(LocalDateTime.now());
 
         if (collaborative) {
             final String wsQueueEndpoint = "/queue/compositions";
@@ -99,7 +110,7 @@ public class CompositionWSServiceImpl implements CompositionWSService {
                 });
             });
         } else {
-            final String wsTopicEndpoint = String.format("/queue/compositions.%s", compoId);
+            final String wsTopicEndpoint = String.format("/topic/compositions.%s", compoId);
             this.msgTemplate.convertAndSend(wsTopicEndpoint, order);
         }
     }

@@ -510,7 +510,7 @@ Modification d'un élément d'une composition (tout attribut). L'utilisateur doi
 - corps de requête :
 ```
 {
-  "id": identifiant de l'élément (unique au sein de la composition). String.
+  "id": identifiant de l'élément (unique au sein de la composition). String. Contrainte : 4 à 50 caractères parmis a-z A-Z 0-9 _ - #
   "elementType" : type de l'élément. String. Contrainte : non blanc
   "x" : coordonnée en abscisse. Number (double). 
   "y" : coordonnée en ordonnée. Number (double). 
