@@ -54,6 +54,7 @@ Propriétés indiquées :
 - Type de connexion websocket : STOMP over SockJS
 - Authentification préalable obligatoire
 - Protection CSRF par injection du jeton CSFR chiffré dans en-tête STOMP (accessible par le service REST GET /api/v1/rest/csrf)
+- Point de connexion : /api/v1/websocket
 
 ### Canaux de communication (point de vue du client) :
 
@@ -61,32 +62,3 @@ Propriétés indiquées :
 - /user/queue/compositions : file de reception des informations générales (composition invitée supprimée, composition invitée devient collaborative, utilisateurs connectés à une composition)
 - /topic/compositions.{compoId} : file de reception des informations propre à l'édition d'une composition
 - /app/compositions.{compoId} : file d'envoie des ordre de modification d'une composition (changement de titre, d'indicateur collaborative, gestion des éléments)
-
-### Principe de fonctionnement chez le client
-
-- Après authentification de l'utilisateur :
-  - une connexion websocket doit être établie
-  - le client doit souscrire aux files /user/queue/errors et /user/queue/compositions
-  - le client peut alors recevoir sur le canal /user/queue/compositions :
-    - la suppression d'une composition pour laquelle il est invité
-    - la bascule d'une composition pour laquelle il est invité de personnelle vers collaborative
-
-- Après ouverture d'une composition, si celle-ci est collaborative :
-  - une souscription au topic /topic/compositions.{compoId} (avec compoId l'identifiant de la composition)
-  - sur ce topic le client peut recevoir :
-    - les modifications faites par les autres (changement de titre, ajout / modification / changement de position / suppression d'un élément)
-    - l'arrivée ou le départ d'autres utilisateurs (propriétaire et invité) sur l'éditeur de la composition
-    - si l'utilisateur est invité :
-      - la bascule de l'état collaboratif de la composition à l'état personnel. Dans ce cas, le client doit basculer l'éditeur en lecture seule, et retirer sa souscription du topic
-  - l'utilisateur va recevoir sur la file /user/queue/compositions la liste des utilisateurs de la composition actuellement connectés à l'éditeur (i.e. qui ont acutellement souscrit au topic /topic/compositions.{compoId})
-  - l'utilisateur ne doit plus utiliser les services REST pour informer des modifications qu'il fait sur la composition, mais par la websocket en envoyant des ordre sur le canal /app/compositions.{compoId}
-  - sur la file /user/queue/compositions, les messages suivant doivent également provoquer des changements dans l'éditeur de l'utilisateur :
-    - bascule de la composition de l'état personnel à collaboratif : si l'utilisateur est invité, l'éditeur devait être en mode lecture seule et doit basculer en mode écriture et souscrire de nouveau au topic
-    - suppression de la composition par son propriétaire : l'utilisateur étant un invité, il doit retirer la souscription du topic et fermer l'éditeur
-
-
-  
-
-
-
-

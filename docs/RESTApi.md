@@ -1,5 +1,7 @@
 # CoComposer Server : détail de l'API REST
 
+L'API REST est utilisée pour l'authentification, la gestion de compte utilisateur, l'accès, la création et la suppression de composition, et la modification et la gestion d'élément de compositions personnelles. La modification et la gestion d'élément de compositions collaborative est déléguée à la communication par websocket.
+
 ## Rappel des caractéristiques :
 
 - Gestion de l'authentification par cookie de session (nom prévu : COCOMPOSERSE)
@@ -9,6 +11,8 @@
   - requêtes protégées : toutes les requêtes POST, PUT, PATCH, DELETE
 - Contrôle du type de données transmises par requête : strict, requirerd application/json
 
+Exemple d'exploitation sur [/src/test/resources/webIntegration](../src/test/ressources/webIntegration)
+
 ## Authentification et sécurité
 
 ### [POST] /api/login
@@ -17,9 +21,9 @@ Authentifie l'utilisateur. Peut être invoquée en étant déjà authentifié, a
 
 #### Requête
 
-- en-têtes HTTP attendus :
+- _en-têtes HTTP attendus :
   - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -30,35 +34,35 @@ Authentifie l'utilisateur. Peut être invoquée en étant déjà authentifié, a
 
 #### Status possibles
 
-- 302 : authentification réussi, redirection vers /api/v1/rest/accounts/myself (le client doit suivre cette redirection et récupérer le profil utilisateur)
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : identifiants invalides
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __302__ : authentification réussi, redirection vers /api/v1/rest/accounts/myself (le client doit suivre cette redirection et récupérer le profil utilisateur)
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : identifiants invalides
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
 - la réponse étant une redirection, il n'y a pas de cors de réponse
 - en-tête attendus :
-  - Set-Cookie : &lt; le cookie de session &gt;
+  - __Set-Cookie__ : &lt; le cookie de session &gt;
 
-### [POST] POST /api/logout : désauthentification [AUTH]
+### [POST] /api/logout : désauthentification [AUTH]
 
 Désauthentifie l'utilisateur. L'utilisateur doit être authentifié
 
 #### Requête
 
 - en-têtes HTTP attendus :
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête : aucun
 
 #### Status possibles
 
-- 204 : désauthentification réussi.
-- 401 : Unauthorized : cookie de session manquant ou invalide
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 500 : Internal Server Error
+- __204__ : désauthentification réussi.
+- __401__ : Unauthorized : cookie de session manquant ou invalide
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -72,9 +76,9 @@ Accès au jeton chiffré CSRF  (utilisé uniquement pour l'initialisatio de la c
 
 #### Status possibles
 
-- 200 : Ok.
-- 401 : Unauthorized : cookie de session manquant ou invalide
-- 500 : Internal Server Error
+- __200__ : Ok.
+- __401__ : Unauthorized : cookie de session manquant ou invalide
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -93,9 +97,9 @@ Profil de l'utilisateur courant authentifié. L'utilisateur doit être authentif
 
 #### Status possibles
 
-- 200 : Ok.
-- 401 : Unauthorized : cookie de session manquant ou invalide
-- 500 : Internal Server Error
+- __200__ : Ok.
+- __401__ : Unauthorized : cookie de session manquant ou invalide
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -117,7 +121,7 @@ Création d'un compte utilisateur. L'utilisateur doit être anonyme.
 
 - en-têtes HTTP attendus :
   - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -132,12 +136,12 @@ Création d'un compte utilisateur. L'utilisateur doit être anonyme.
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur déjà authentifié
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur déjà authentifié
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -158,10 +162,10 @@ Modification partiel du compte utilisateur (sauf mot de passe). L'utilisateur do
 #### Requête
 
 - paramètres d'url :
-  - userId: identifiant de l'utilisateur. Contraintes : 24 car hexadécimaux en minuscule
+  - __userId__: identifiant de l'utilisateur. Contraintes : 24 car hexadécimaux en minuscule
 - en-têtes HTTP attendus :
   - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -173,13 +177,13 @@ Modification partiel du compte utilisateur (sauf mot de passe). L'utilisateur do
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not Found : utilisateur inconnu
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not Found : utilisateur inconnu
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -200,20 +204,20 @@ Suppression d'un compte. L'utilisateur doit être authentifié. userId doit êtr
 #### Requête
 
 - paramètres d'url :
-  - userId: identifiant de l'utilisateur. Contraintes : 24 car hexadécimaux en minuscule
+  - __userId__: identifiant de l'utilisateur. Contraintes : 24 car hexadécimaux en minuscule
 - en-têtes HTTP attendus :
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête : aucun
 
 #### Status possibles
 
-- 204 : Ok, no content
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not Found : utilisateur inconnu
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __204__ : Ok, no content
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not Found : utilisateur inconnu
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -226,10 +230,10 @@ Changement de mot de passe. L'utilisateur doit être authentifié. userId doit �
 #### Requête
 
 - paramètres d'url :
-  - userId: identifiant de l'utilisateur. Contraintes : 24 car hexadécimaux en minuscule
+  - __userId__: identifiant de l'utilisateur. Contraintes : 24 car hexadécimaux en minuscule
 - en-têtes HTTP attendus :
   - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -240,13 +244,13 @@ Changement de mot de passe. L'utilisateur doit être authentifié. userId doit �
 
 #### Status possibles
 
-- 204 : Ok, no content
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié ou mot de passe courant invalide
-- 404 : Not Found : utilisateur inconnu
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __204__ : Ok, no content
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié ou mot de passe courant invalide
+- __404__ : Not Found : utilisateur inconnu
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -260,9 +264,9 @@ Résumés des compositions de l'utilisateur courant (en tant que propriétaire e
 
 #### Status possibles
 
-- 200 : Ok
-- 401 : Unauthorized : utilisateur non authentifié
-- 500 : Internal Server Error
+- __200__ : Ok
+- __401__ : Unauthorized : utilisateur non authentifié
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -295,7 +299,7 @@ Création d'un composition. L'utilisateur doit être authentifié. L'utilisateur
 
 - en-têtes HTTP attendus :
   - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -306,12 +310,12 @@ Création d'un composition. L'utilisateur doit être authentifié. L'utilisateur
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -334,15 +338,15 @@ Composition en détails (inclut ses éléments, le propriétaire et les invités
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
 
 #### Status possibles
 
-- 200 : Ok
-- 401 : Unauthorized : utilisateur non authentifié
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 404 : Not found : composition inconnue
-- 500 : Internal Server Error
+- __200__ : Ok
+- __401__ : Unauthorized : utilisateur non authentifié
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __404__ : Not found : composition inconnue
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -377,10 +381,10 @@ Modification exclusive du titre ou du status collaboratif d'une composition (l'u
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
 - en-têtes HTTP attendus :
-  - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __Content-Type__: application/json
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -396,13 +400,13 @@ OU
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not Found : composition inconnue
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not Found : composition inconnue
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -425,20 +429,20 @@ Suppression d'une composition. L'utilisateur doit être authentifié. Si l'utili
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
 - en-têtes HTTP attendus :
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête : aucun
 
 #### Status possibles
 
-- 204 : Ok, no content
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not Found : composition inconnue
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __204__ : Ok, no content
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not Found : composition inconnue
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -453,10 +457,10 @@ Création d'un élément d'une composition. L'utilisateur doit être authentifi�
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
 - en-têtes HTTP attendus :
-  - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __Content-Type__: application/json
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -470,13 +474,13 @@ Création d'un élément d'une composition. L'utilisateur doit être authentifi�
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not found. Composition inconnue.
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not found. Composition inconnue.
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -498,11 +502,11 @@ Modification d'un élément d'une composition (tout attribut). L'utilisateur doi
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
-  - elemId: identifiant de l'élément. Contraintes : 4 à 50 car a-z A-Z _  - #
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __elemId__: identifiant de l'élément. Contraintes : 4 à 50 car a-z A-Z _  - #
 - en-têtes HTTP attendus :
-  - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __Content-Type__: application/json
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -517,13 +521,13 @@ Modification d'un élément d'une composition (tout attribut). L'utilisateur doi
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not found. Composition ou élément de composition inconnue.
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not found. Composition ou élément de composition inconnue.
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -545,11 +549,11 @@ Modification de la position d'un élément d'une composition. L'utilisateur doit
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
-  - elemId: identifiant de l'élément. Contraintes : 4 à 50 car a-z A-Z _  - #
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __elemId__: identifiant de l'élément. Contraintes : 4 à 50 car a-z A-Z _  - #
 - en-têtes HTTP attendus :
-  - Content-Type: application/json
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __Content-Type__: application/json
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête :
 ```
 {
@@ -560,13 +564,13 @@ Modification de la position d'un élément d'une composition. L'utilisateur doit
 
 #### Status possibles
 
-- 200 : Ok
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not found. Composition ou élément de composition inconnue.
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __200__ : Ok
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not found. Composition ou élément de composition inconnue.
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
@@ -584,22 +588,36 @@ Suppression d'un élément d'une composition. L'utilisateur doit être authentif
 #### Requête
 
 - paramètres d'url :
-  - compoId: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
-  - elemId: identifiant de l'élément. Contraintes : 4 à 50 car a-z A-Z _  - #
+  - __compoId__: identifiant de la composition. Contraintes : 24 car hexadécimaux en minuscule
+  - __elemId__: identifiant de l'élément. Contraintes : 4 à 50 car a-z A-Z _  - #
 - en-têtes HTTP attendus :
-  - X-XSRF-TOKEN: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
+  - __X-XSRF-TOKEN__: &lt; valeur du jeton CSRF présent dans le cookie XSRF-TOKEN &gt;
 - corps de requête : aucun
 
 #### Status possibles
 
-- 204 : Ok, no content
-- 400 : Bad request, données invalides
-- 401 : Unauthorized : utilisateur non authentifié
-- 404 : Not Found : composition inconnue
-- 403 : Forbidden : token XSRF manquant ou invalide
-- 415 : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
-- 500 : Internal Server Error
+- __204__ : Ok, no content
+- __400__ : Bad request, données invalides
+- __401__ : Unauthorized : utilisateur non authentifié
+- __404__ : Not Found : composition inconnue
+- __403__ : Forbidden : token XSRF manquant ou invalide
+- __415__ : Unsuported Media Type, en-tête Content-Type invalide ou données non JSON
+- __500__ : Internal Server Error
 
 #### Réponse en cas de succès
 
 Pas de donnée renvoyée en cas de succès
+
+## Format des corps d'erreur
+
+En cas de retour en erreur, l'API renvoit, en plus du status HTTP, un corps de réponse en JSON dans le format suivant :
+
+```
+{
+  "timestamp": temps de l'erreur, au format UTC. String.
+  "status": rappel du status HTTP. Number (entier).
+  "error": nom d'erreur. String.
+  "message": détails de l'erreur manifestement en anglais. String. Possiblement null.
+  "path": chemin de l'URL de la requête.
+}
+```
