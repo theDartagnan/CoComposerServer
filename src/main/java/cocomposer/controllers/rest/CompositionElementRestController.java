@@ -22,6 +22,7 @@ import cocomposer.model.CompositionElement;
 import cocomposer.model.views.CompositionViews;
 import cocomposer.services.CompositionElementService;
 import com.fasterxml.jackson.annotation.JsonView;
+import java.util.HashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,8 @@ public class CompositionElementRestController {
         if (elementInfo.getId() == null) {
             correctedElementInfo = new CompositionElement(elemId, elementInfo.getElementType(), elementInfo.getStyle(), elementInfo.getX(), elementInfo.getY());
             if (elementInfo.getExtraProperties() != null) {
-                correctedElementInfo.getExtraProperties().putAll(elementInfo.getExtraProperties());
+                HashMap<String, Object> extraProp = new HashMap<>(elementInfo.getExtraProperties());
+                correctedElementInfo.setExtraProperties(extraProp);
             }
         } else if (!elemId.equals(elementInfo.getId())) {
             throw new IllegalArgumentException("Unconsistent update data with element id");
